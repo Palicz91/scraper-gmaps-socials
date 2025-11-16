@@ -1,0 +1,114 @@
+2025-11-06 07:47:56,874 - INFO - === RUN ALL START ===
+2025-11-06 07:47:56,875 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-06 07:47:56,891 - INFO - Siker: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/make_queries.py
+2025-11-06 07:47:58,897 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-06 07:47:58,948 - ERROR - Hiba futtatás közben: Command '['/Library/Frameworks/Python.framework/Versions/3.13/bin/python3', '/Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-06 07:48:03,954 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 2
+2025-11-06 07:48:04,004 - ERROR - Hiba futtatás közben: Command '['/Library/Frameworks/Python.framework/Versions/3.13/bin/python3', '/Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-06 07:48:09,009 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 3
+2025-11-06 07:48:09,061 - ERROR - Hiba futtatás közben: Command '['/Library/Frameworks/Python.framework/Versions/3.13/bin/python3', '/Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-06 07:57:49,757 - INFO - === RUN ALL START ===
+2025-11-06 07:57:49,758 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-06 07:57:49,774 - INFO - /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-06 07:57:51,779 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-06 07:58:12,640 - INFO - /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py sikeresen lefutott.
+2025-11-06 07:58:14,646 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 1
+2025-11-06 07:58:16,134 - INFO - /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/get_place_data.py sikeresen lefutott.
+2025-11-06 07:58:18,140 - WARNING - places_data.csv nem található.
+2025-11-06 07:58:18,140 - INFO - RUN ALL befejeződött.
+2025-11-06 08:06:08,252 - INFO - === RUN ALL START ===
+2025-11-06 08:06:08,252 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-06 08:06:08,270 - INFO - /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-06 08:06:10,275 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-06 13:20:30,479 - INFO - /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/search_query.py sikeresen lefutott.
+2025-11-06 13:20:32,490 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 1
+2025-11-06 17:38:51,401 - INFO - /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/get_place_data.py sikeresen lefutott.
+2025-11-06 17:38:53,428 - INFO - Átmásoltam: /Users/adampalicz/Downloads/20251105 Scraper/20251105 GMaps Scraper/places_data.csv → /Users/adampalicz/Downloads/20251105 Scraper/20251105 Socials Scraper/input.csv
+2025-11-06 17:38:53,428 - INFO - Futtatás: /Users/adampalicz/Downloads/20251105 Scraper/20251105 Socials Scraper/social_media_scraper.py, próbálkozás 1
+2025-11-06 23:02:55,208 - INFO - /Users/adampalicz/Downloads/20251105 Scraper/20251105 Socials Scraper/social_media_scraper.py sikeresen lefutott.
+2025-11-13 13:50:21,199 - INFO - === RUN ALL START ===
+2025-11-13 13:50:21,200 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-13 13:50:21,223 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-13 13:50:23,228 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-13 13:50:23,279 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 13:50:28,285 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 2
+2025-11-13 13:50:28,338 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 13:50:33,345 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 3
+2025-11-13 13:50:33,396 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 13:51:44,324 - INFO - === RUN ALL START ===
+2025-11-13 13:51:44,325 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-13 13:51:44,341 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-13 13:51:46,346 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-13 13:51:46,382 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 13:51:51,388 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 2
+2025-11-13 13:51:51,442 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 13:51:56,446 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 3
+2025-11-13 13:51:56,497 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 13:52:11,715 - INFO - === RUN ALL START ===
+2025-11-13 13:52:11,715 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-13 13:52:11,735 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-13 13:52:13,740 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-13 22:39:22,936 - INFO - === RUN ALL START ===
+2025-11-13 22:39:22,938 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-13 22:39:22,954 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-13 22:39:24,960 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-13 22:39:25,014 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 22:39:30,020 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 2
+2025-11-13 22:39:30,070 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 22:39:35,076 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 3
+2025-11-13 22:39:35,127 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py']' returned non-zero exit status 1.
+2025-11-13 22:39:53,514 - INFO - === RUN ALL START ===
+2025-11-13 22:39:53,515 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-13 22:39:53,533 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-13 22:39:55,538 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-14 03:39:20,743 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py sikeresen lefutott.
+2025-11-14 03:39:22,764 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 1
+2025-11-14 03:39:23,511 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py']' returned non-zero exit status 1.
+2025-11-14 03:39:28,517 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 2
+2025-11-14 03:39:28,647 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py']' returned non-zero exit status 1.
+2025-11-14 03:39:33,652 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 3
+2025-11-14 03:39:33,783 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py']' returned non-zero exit status 1.
+2025-11-14 08:29:26,073 - INFO - === RUN ALL START ===
+2025-11-14 08:29:26,074 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-14 08:29:26,091 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-14 08:29:28,097 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-14 10:40:47,413 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py sikeresen lefutott.
+2025-11-14 10:40:49,429 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 1
+2025-11-14 10:40:54,764 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py sikeresen lefutott.
+2025-11-14 10:40:56,781 - INFO - Átmásoltam: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/places_data.csv → /Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/input.csv
+2025-11-14 10:40:56,782 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py, próbálkozás 1
+2025-11-14 10:40:56,902 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py']' returned non-zero exit status 1.
+2025-11-14 10:43:55,086 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py, próbálkozás 2
+2025-11-14 10:43:55,288 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py']' returned non-zero exit status 1.
+2025-11-14 10:44:00,300 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py, próbálkozás 3
+2025-11-14 10:44:00,441 - ERROR - Hiba: Command '['python3', '/Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py']' returned non-zero exit status 1.
+2025-11-14 10:56:18,639 - INFO - === RUN ALL START ===
+2025-11-14 10:56:18,640 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-14 10:56:18,657 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-14 10:56:20,663 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-14 13:49:14,564 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py sikeresen lefutott.
+2025-11-14 13:49:16,580 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 1
+2025-11-15 17:18:26,086 - INFO - === RUN ALL START ===
+2025-11-15 17:18:26,088 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-15 17:18:26,107 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-15 17:18:28,112 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-15 22:00:57,690 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py sikeresen lefutott.
+2025-11-15 22:00:59,706 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 1
+2025-11-15 22:01:04,529 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/get_place_data.py sikeresen lefutott.
+2025-11-15 22:01:06,544 - INFO - Átmásoltam: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/places_data.csv → /Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/input.csv
+2025-11-15 22:01:06,545 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py, próbálkozás 1
+2025-11-16 13:30:03,787 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 Socials Scraper/social_media_scraper.py sikeresen lefutott.
+2025-11-16 14:53:23,830 - INFO - === RUN ALL START ===
+2025-11-16 14:53:23,831 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-16 14:53:23,854 - INFO - /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-16 14:53:25,859 - INFO - Futtatás: /Users/adampalicz/Downloads/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-16 11:40:13,213 - INFO - === RUN ALL START ===
+2025-11-16 11:40:13,213 - INFO - Futtatás: /home/hello/scraper/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-16 11:40:13,238 - INFO - /home/hello/scraper/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-16 11:40:15,239 - INFO - Futtatás: /home/hello/scraper/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-16 11:45:59,467 - INFO - === RUN ALL START ===
+2025-11-16 11:45:59,471 - INFO - Futtatás: /home/hello/scraper/Scraper/20251105 GMaps Scraper/make_queries.py, próbálkozás 1
+2025-11-16 11:45:59,494 - INFO - /home/hello/scraper/Scraper/20251105 GMaps Scraper/make_queries.py sikeresen lefutott.
+2025-11-16 11:46:01,495 - INFO - Futtatás: /home/hello/scraper/Scraper/20251105 GMaps Scraper/search_query.py, próbálkozás 1
+2025-11-16 12:02:18,570 - INFO - /home/hello/scraper/Scraper/20251105 GMaps Scraper/search_query.py sikeresen lefutott.
+2025-11-16 12:02:20,574 - INFO - Futtatás: /home/hello/scraper/Scraper/20251105 GMaps Scraper/get_place_data.py, próbálkozás 1

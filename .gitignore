@@ -1,0 +1,17 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Output and runtime files
+*.csv
+*.log
+links.txt
+google_maps_queries.txt
+last_processed.txt
+
+# Chrome temp dirs
+*.scoped_dir*

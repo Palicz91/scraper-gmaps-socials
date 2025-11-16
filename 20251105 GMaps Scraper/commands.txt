@@ -1,0 +1,3 @@
+python make_queries.py
+python search_query.py
+python get_place_data.py

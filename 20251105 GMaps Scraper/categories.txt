@@ -1,0 +1,45 @@
+cafe
+restaurant
+bar
+coffee shop
+bistro
+wine bar
+fine dining
+street food
+steakhouse
+seafood
+Foodcourt
+Clinic
+Gym
+Fitness center
+Wellness
+Dentist
+bakery
+pastry
+brunch
+dessert
+gelato
+ice cream
+tea house
+cocktail
+pub
+pizza
+spa
+massage
+hair salon
+barbershop
+nail salon
+beauty salon
+aesthetic clinic
+dermatology clinic
+pilates
+yoga
+boxing
+crossfit
+hotel
+hostel
+guesthouse
+homestay
+escape room
+tattoo
+
