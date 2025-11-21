@@ -1,50 +1,35 @@
-Ang Mo Kio, Singapore
-Bedok, Singapore
-Bishan, Singapore
-Boon Lay, Singapore
-Bukit Batok, Singapore
-Bukit Merah, Singapore
-Bukit Panjang, Singapore
-Bukit Timah, Singapore
-Choa Chu Kang, Singapore
-Clementi, Singapore
-Downtown Core, Singapore
-Geylang, Singapore
-Hougang, Singapore
-Jurong East, Singapore
-Jurong West, Singapore
-Kallang, Singapore
-Lim Chu Kang, Singapore
-Mandai, Singapore
-Marine Parade, Singapore
-Museum, Singapore
-Newton, Singapore
-Novena, Singapore
-Orchard, Singapore
-Outram, Singapore
-Pasir Ris, Singapore
-Paya Lebar, Singapore
-Pioneer, Singapore
-Punggol, Singapore
-Queenstown, Singapore
-River Valley, Singapore
-Rochor, Singapore
-Seletar, Singapore
-Sembawang, Singapore
-Sengkang, Singapore
-Serangoon, Singapore
-Simpang, Singapore
-Singapore River, Singapore
-Southern Islands, Singapore
-Straits View, Singapore
-Sungei Kadut, Singapore
-Tampines, Singapore
-Tanglin, Singapore
-Tengganu, Singapore
-Toa Payoh, Singapore
-Tuas, Singapore
-Western Islands, Singapore
-Western Water Catchment, Singapore
-Woodlands, Singapore
-Yishun, Singapore
-Orchard Road, Singapore
+Sydney CBD, Sydney
+The Rocks, Sydney
+Circular Quay, Sydney
+Barangaroo, Sydney
+Darling Harbour, Sydney
+Darling Square, Sydney
+Chinatown Haymarket, Sydney
+Surry Hills, Sydney
+Darlinghurst, Sydney
+Potts Point, Sydney
+Kings Cross, Sydney
+Paddington, Sydney
+Newtown, Sydney
+Enmore, Sydney
+Glebe, Sydney
+Chippendale, Sydney
+Pyrmont, Sydney
+Alexandria, Sydney
+Bondi Beach, Sydney
+Manly, Sydney
+Burwood, Sydney
+Parramatta, Sydney
+George Street CBD, Sydney
+Pitt Street CBD, Sydney
+King Street Newtown, Sydney
+Enmore Road Enmore, Sydney
+Crown Street Surry Hills, Sydney
+Oxford Street Darlinghurst, Sydney
+Stanley Street Darlinghurst, Sydney
+Harris Street Pyrmont, Sydney
+Campbell Parade Bondi Beach, Sydney
+Hall Street Bondi Beach, Sydney
+Darling Drive Darling Harbour, Sydney
+Quay Quarter Lanes Circular Quay, Sydney
+Kensington Street (Spice Alley) Chippendale, Sydney
