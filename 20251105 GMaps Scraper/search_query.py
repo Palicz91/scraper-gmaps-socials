@@ -35,12 +35,18 @@ def scroll_and_extract_links(driver, query):
     # Navigate to Google Maps search
     query_encoded = query.replace(' ', '+')
     driver.get(f"https://www.google.com/maps/search/{query_encoded}?hl=en")
-    time.sleep(5)
+    
+    # Várjuk meg, amíg a találati lista és legalább 1 hely link megjelenik
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located(
+            (By.CSS_SELECTOR, "div[role='feed'] a[href*='/maps/place/']")
+        )
+    )
     
     links = set()  # Use set to avoid duplicates
     last_height = 0
     scroll_attempts = 0
-    max_scroll_attempts = 2  # Prevent infinite scrolling
+    max_scroll_attempts = 4  # kicsit mélyebb scroll, de rövidebb várakozásokkal
     
     try:
         # Wait for the results panel to load
@@ -54,7 +60,7 @@ def scroll_and_extract_links(driver, query):
             
             # Scroll to the bottom of the results
             driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", results_container)
-            time.sleep(3)  # Wait for new results to load
+            time.sleep(1.5)  # 3 helyett 1.5 elég szokott lenni
             
             # Get current scroll height
             current_height = driver.execute_script("return arguments[0].scrollHeight", results_container)
@@ -150,3 +156,4 @@ if __name__ == '__main__':
         save_links_to_file(list(all_links), "links.txt")
         driver.quit()
         print(f"\nProcess completed. Total unique links collected: {len(all_links)}")
+
