@@ -177,10 +177,8 @@ def get_place_data(driver, url, max_retries=3):
                 print(f"  Failed to process {url} after {max_retries} attempts")
                 return None
         finally:
-            try:
-                driver.delete_all_cookies()
-            except Exception:
-                pass
+            # korábban itt minden körben töröltük a cookie-kat, ez lassú és általában felesleges
+            pass
 
 def save_to_csv(data_list, filename="places_data.csv"):
     """Save place data to CSV file."""
@@ -295,7 +293,7 @@ def main():
             logging.warning(f"Data extraction failed for {link}, retrying automatically...")
             try:
                 for retry in range(2):
-                    time.sleep(3)
+                    time.sleep(0.2)  # 1 másodperc helyett 0.2
                     place_data = get_place_data(driver, link)
                     if place_data:
                         save_single_record_to_csv(place_data, "places_data.csv")
@@ -306,7 +304,7 @@ def main():
             except Exception as e:
                 logging.exception(f"Critical failure on retry for {link}: {e}")
 
-        time.sleep(1)
+        # time.sleep(1)  # felesleges extra várakozás volt
 
         # minden 5 link után elmentjük a haladást
         if i % 5 == 0:
