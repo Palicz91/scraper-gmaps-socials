@@ -51,7 +51,7 @@ def scroll_and_extract_links(driver, query):
     links = set()
     last_height = 0
     scroll_attempts = 0
-    max_scroll_attempts = 4
+    max_scroll_attempts = 2
     
     try:
         results_container = driver.find_element(By.CSS_SELECTOR, "div[role='feed']")
@@ -179,4 +179,5 @@ if __name__ == '__main__':
         except Exception:
             pass
         print(f"\nProcess completed. Total unique links collected: {len(all_links)}")
+
 
