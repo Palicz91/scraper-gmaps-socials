@@ -47,6 +47,11 @@ class SocialMediaScraper:
         self.browser = None
         self.playwright = None
         
+        # Blacklisted domains that are known to be problematic
+        self.BAD_DOMAIN_PATTERNS = [
+            "gulfcar.com"
+        ]
+        
         # Common contact page paths
         self.COMMON_CONTACT_PATHS = [
             "",              # főoldal
@@ -244,12 +249,20 @@ class SocialMediaScraper:
         return num
 
     async def fetch_page_content(self, page: Page, url: str) -> str:
-        """Fetch page content with error handling."""
+        """Fetch page content with extra timeout and error handling."""
         try:
-            await page.goto(url, timeout=self.timeout, wait_until="domcontentloaded")
-            await asyncio.sleep(0.5)  # Reduced from 2 seconds for faster processing
-            return await page.content()
-        except Exception:
+            async def _goto():
+                await page.goto(url, timeout=self.timeout, wait_until="domcontentloaded")
+                await asyncio.sleep(0.5)
+                return await page.content()
+
+            # extra safeguard: ha a goto+content is túl sokáig tart, dobjuk
+            return await asyncio.wait_for(_goto(), timeout=float(self.max_scrape_time))
+        except (PlaywrightTimeoutError, asyncio.TimeoutError) as e:
+            logger.warning(f"Timeout loading {url}: {e}")
+            return ""
+        except Exception as e:
+            logger.warning(f"Error loading {url}: {e}")
             return ""
 
     def extract_social_links(self, content: str, base_url: str) -> Dict[str, str]:
@@ -347,9 +360,8 @@ class SocialMediaScraper:
         """
         context = None
         try:
-            # Start one context and page globally for all websites
+            # Start one context for all websites (időnként reseteljük)
             context = await self.browser.new_context()
-            page = await context.new_page()
             
             # Detect file encoding first
             detected_encoding = self.detect_encoding(input_file)
@@ -391,7 +403,8 @@ class SocialMediaScraper:
             ]
             
             for col in social_columns:
-                df[col] = ''
+                if col not in df.columns:
+                    df[col] = ''
             
             # Create initial output file with headers
             df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=',')
@@ -400,29 +413,56 @@ class SocialMediaScraper:
             # Process each row with retry logic
             for index, row in df.iterrows():
                 website = row['website']
-                if pd.isna(website) or website.strip() == '':
+                if pd.isna(website) or str(website).strip() == '':
                     logger.info(f"Row {index + 1}: No website URL, skipping")
                     continue
-                
+
+                website = str(website).strip()
                 logger.info(f"Processing row {index + 1}/{len(df)}: {website}")
-                
+
+                # per-URL új page
+                try:
+                    page = await context.new_page()
+                except Exception as e:
+                    logger.error(f"Could not open new page for {website}: {e}")
+                    # próbáljunk teljes context resetet
+                    try:
+                        await context.close()
+                    except Exception:
+                        pass
+                    context = await self.browser.new_context()
+                    page = await context.new_page()
+
                 # Retry logic for each website
                 social_data = {}
-                for attempt in range(2):  # 2 attempts
+                try:
+                    for attempt in range(2):  # 2 attempts
+                        try:
+                            social_data = await asyncio.wait_for(
+                                self.scrape_website(website, page),
+                                timeout=float(self.max_scrape_time)
+                            )
+                            break
+                        except asyncio.TimeoutError as e:
+                            logger.warning(f"Attempt {attempt + 1} TIMEOUT for {website}: {e}")
+                            if attempt == 1:
+                                raise
+                        except Exception as e:
+                            logger.warning(f"Attempt {attempt + 1} failed for {website}: {e}")
+                            if attempt == 1:
+                                raise
+                except Exception as e:
+                    logger.error(f"All attempts failed for {website}: {e}")
+                    social_data = {
+                        'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
+                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
+                    }
+                finally:
+                    # per-URL page bezárása, hogy ne maradjon „beragadt" állapot
                     try:
-                        social_data = await asyncio.wait_for(
-                            self.scrape_website(website, page),
-                            timeout=float(self.max_scrape_time)
-                        )
-                        break
-                    except Exception as e:
-                        logger.warning(f"Attempt {attempt + 1} failed for {website}: {e}")
-                        if attempt == 1:  # Last attempt failed
-                            social_data = {
-                                'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
-                                'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
-                            }
-                            logger.error(f"All attempts failed for {website}")
+                        await page.close()
+                    except Exception:
+                        pass
                 
                 # Update the dataframe
                 df.at[index, 'scraped_email'] = social_data.get('email', '')
@@ -434,6 +474,15 @@ class SocialMediaScraper:
                 df.at[index, 'scraped_linkedin'] = social_data.get('linkedin', '')
                 df.at[index, 'scraped_twitter'] = social_data.get('twitter', '')
                 df.at[index, 'scraped_tiktok'] = social_data.get('tiktok', '')
+                
+                # X soronként context reset (pl. 200-nál)
+                if (index + 1) % 200 == 0:
+                    logger.info(f"Resetting browser context at row {index + 1}")
+                    try:
+                        await context.close()
+                    except Exception:
+                        pass
+                    context = await self.browser.new_context()
                 
                 # Mentsd csak minden 25. sor után (vagy az utolsó sor végén)
                 if (index + 1) % 25 == 0 or (index + 1) == len(df):
@@ -495,6 +544,13 @@ class SocialMediaScraper:
         }
         
         if not url or url.strip() == '':
+            return result
+
+        # Check for blacklisted domains early
+        parsed = urlparse(url if url.startswith(("http://", "https://")) else "https://" + url)
+        domain = parsed.netloc.lower()
+        if any(bad in domain for bad in self.BAD_DOMAIN_PATTERNS):
+            logger.warning(f"Skipping blacklisted domain: {domain}")
             return result
 
         await page.set_viewport_size({"width": 1920, "height": 1080})
@@ -650,7 +706,11 @@ signal.signal(signal.SIGTERM, handle_exit)
 
 async def main():
     """Main function to run the scraper."""
-    scraper = SocialMediaScraper(headless=True, timeout=30000, max_scrape_time=60)
+    scraper = SocialMediaScraper(
+        headless=True,
+        timeout=15000,      # 15s page goto timeout
+        max_scrape_time=25  # max 25s / website
+    )
     
     try:
         await scraper.start_browser()
