@@ -31,6 +31,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# problémás domainek, amiket instant skipelünk
+BAD_DOMAIN_PATTERNS = [
+    "gulfcar.com",
+    "autocarni.com",
+]
+
 class SocialMediaScraper:
     def __init__(self, headless: bool = True, timeout: int = 30000, max_scrape_time: int = 60):
         """
@@ -418,6 +424,15 @@ class SocialMediaScraper:
                     continue
 
                 website = str(website).strip()
+
+                # --- BLACKLIST CHECK ITT ---
+                parsed = urlparse(website if website.startswith(("http://", "https://")) else "https://" + website)
+                domain = parsed.netloc.lower()
+                if any(bad in domain for bad in BAD_DOMAIN_PATTERNS):
+                    logger.warning(f"Row {index + 1}: Blacklisted domain {domain}, skipping")
+                    continue
+                # ---------------------------
+
                 logger.info(f"Processing row {index + 1}/{len(df)}: {website}")
 
                 # per-URL új page
@@ -546,24 +561,27 @@ class SocialMediaScraper:
         if not url or url.strip() == '':
             return result
 
-        # Check for blacklisted domains early
-        parsed = urlparse(url if url.startswith(("http://", "https://")) else "https://" + url)
-        domain = parsed.netloc.lower()
-        if any(bad in domain for bad in self.BAD_DOMAIN_PATTERNS):
-            logger.warning(f"Skipping blacklisted domain: {domain}")
+        # Ensure URL has protocol
+        url = url.strip()
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+
+        # domain + blacklist check itt is (extra védelem)
+        parsed_for_domain = urlparse(url)
+        domain = parsed_for_domain.netloc.lower()
+        if any(bad in domain for bad in BAD_DOMAIN_PATTERNS):
+            logger.warning(f"Skipping blacklisted domain in scrape_website: {domain}")
             return result
 
         await page.set_viewport_size({"width": 1920, "height": 1080})
         
         try:
-            # Ensure URL has protocol
-            if not url.startswith(('http://', 'https://')):
-                url = 'https://' + url
-            
             logger.info(f"Scraping: {url}")
             
             parsed = urlparse(url)
             base = f"{parsed.scheme}://{parsed.netloc}"
+
+            start_time = time.time()  # ← FALIÓRA
 
             all_emails = set()
             all_phones = set()
@@ -581,6 +599,11 @@ class SocialMediaScraper:
 
             # Check all pages
             for full_url in pages_to_check:
+                # faliórás guard: ha túl sok idő ment el, leállunk
+                if time.time() - start_time > self.max_scrape_time:
+                    logger.warning(f"Max scrape time exceeded for {url}, stopping page checks.")
+                    break
+
                 logger.info(f"Checking page: {full_url}")
                 
                 content = await self.fetch_page_content(page, full_url)
