@@ -43,6 +43,28 @@ def run_script(script_path: Path, retries=2, cwd: Path | None = None):
                 print("⚠️ Feladom ezt a scriptet.")
                 return False
 
+def run_postprocess(input_csv: Path):
+    postprocess_script = SOCIAL_DIR / "postprocess_places.py"
+    if not postprocess_script.exists():
+        print("⚠️ Postprocess script nem található, ezt kihagyom.")
+        logging.warning("postprocess_places.py hiányzik.")
+        return
+
+    print(f"\n🚀 Postprocess futtatása: {postprocess_script} {input_csv}")
+    logging.info(f"Postprocess futtatása: {postprocess_script} {input_csv}")
+
+    try:
+        subprocess.run(
+            ["python3", str(postprocess_script), str(input_csv)],
+            check=True,
+            cwd=str(SOCIAL_DIR),
+        )
+        print("✅ Postprocess sikeresen lefutott.")
+        logging.info("Postprocess sikeresen lefutott.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Postprocess hiba: {e}")
+        logging.error(f"Postprocess hiba: {e}")
+
 if __name__ == "__main__":
     print("=== RUN ALL START ===")
     logging.info("=== RUN ALL START ===")
@@ -63,7 +85,14 @@ if __name__ == "__main__":
 
             social_script = SOCIAL_DIR / "social_media_scraper.py"
             if social_script.exists():
-                run_script(social_script, cwd=SOCIAL_DIR)
+                ok_social = run_script(social_script, cwd=SOCIAL_DIR)
+                if ok_social:
+                    output_csv = SOCIAL_DIR / "output.csv"
+                    if output_csv.exists():
+                        run_postprocess(output_csv)
+                    else:
+                        print("⚠️ Nem találom az output.csv-t, nem tudom postprocesselni.")
+                        logging.warning("output.csv hiányzik a Social scraper után.")
             else:
                 print("⚠️ Social script nem található, ezt kihagyom.")
         else:
@@ -71,3 +100,5 @@ if __name__ == "__main__":
             logging.warning("places_data.csv hiányzik.")
 
     print("\n🏁 Kész.")
+
+
