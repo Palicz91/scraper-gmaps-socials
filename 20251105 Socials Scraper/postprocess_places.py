@@ -134,10 +134,23 @@ def is_valid_email(email: str) -> bool:
     if not EMAIL_RE.match(email):
         return False
 
-    domain = email.split("@")[-1].lower()
-    if domain in PLACEHOLDER_DOMAINS:
+    # local part + domain szétbontása
+    local, domain = email.rsplit("@", 1)
+    local_lower = local.lower()
+    domain_lower = domain.lower()
+
+    # Sentry jellegű gépi ID-k kiszűrése:
+    # 24+ hosszú, csak hex karakterek
+    if re.fullmatch(r"[0-9a-f]{24,}", local_lower):
         return False
-    if domain.endswith(".local"):
+
+    # ha akarod, direkt domain szűrőt is rakhatsz:
+    # if domain_lower.startswith("sentry.") or "sentry" in domain_lower:
+    #     return False
+
+    if domain_lower in PLACEHOLDER_DOMAINS:
+        return False
+    if domain_lower.endswith(".local"):
         return False
 
     return True
