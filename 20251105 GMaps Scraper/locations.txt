@@ -1,96 +1,77 @@
-Ang Mo Kio, Singapore
-Bedok, Singapore
-Bishan, Singapore
-Boon Lay, Singapore
-Bukit Batok, Singapore
-Bukit Merah, Singapore
-Bukit Panjang, Singapore
-Bukit Timah, Singapore
-Choa Chu Kang, Singapore
-Clementi, Singapore
-Downtown Core, Singapore
-Geylang, Singapore
-Hougang, Singapore
-Jurong East, Singapore
-Jurong West, Singapore
-Kallang, Singapore
-Lim Chu Kang, Singapore
-Mandai, Singapore
-Marine Parade, Singapore
-Museum, Singapore
-Newton, Singapore
-Novena, Singapore
-Orchard, Singapore
-Outram, Singapore
-Pasir Ris, Singapore
-Paya Lebar, Singapore
-Pioneer, Singapore
-Punggol, Singapore
-Queenstown, Singapore
-River Valley, Singapore
-Rochor, Singapore
-Seletar, Singapore
-Sembawang, Singapore
-Sengkang, Singapore
-Serangoon, Singapore
-Simpang, Singapore
-Singapore River, Singapore
-Southern Islands, Singapore
-Straits View, Singapore
-Sungei Kadut, Singapore
-Tampines, Singapore
-Tanglin, Singapore
-Tengganu, Singapore
-Toa Payoh, Singapore
-Tuas, Singapore
-Western Islands, Singapore
-Western Water Catchment, Singapore
-Woodlands, Singapore
-Yishun, Singapore
-Orchard Road, Singapore
-Marina Bay Sands, Singapore
-Bayfront Avenue, Singapore
-Sentosa Island, Singapore
-Clarke Quay, Singapore
-Boat Quay, Singapore
-Robertson Quay, Singapore
-Haji Lane, Singapore
-Arab Street, Singapore
-Bugis Street, Singapore
-Chinatown, Singapore
-Ann Siang Hill, Singapore
-Club Street, Singapore
-Keong Saik Road, Singapore
-Duxton Hill, Singapore
-Tanjong Pagar Road, Singapore
-South Bridge Road, Singapore
-North Bridge Road, Singapore
-Raffles Place, Singapore
-Shenton Way, Singapore
-Marina Boulevard, Singapore
-Esplanade Drive, Singapore
-Bras Basah Road, Singapore
-Dhoby Ghaut, Singapore
-Little India, Singapore
-Serangoon Road, Singapore
-Upper Thomson Road, Singapore
-Holland Village, Singapore
-Dempsey Hill, Singapore
-East Coast Road, Singapore
-Jalan Besar, Singapore
-Balestier Road, Singapore
-Alexandra Road, Singapore
-HarbourFront, Singapore
-VivoCity, Singapore
-IMM Jurong, Singapore
-Jewel Changi Airport, Singapore
-Changi Business Park, Singapore
-Science Park Drive, Singapore
-One North, Singapore
-Fusionopolis, Singapore
-Mapletree Business City, Singapore
-Bukit Timah Road, Singapore
-Newton Food Centre, Singapore
-Lau Pa Sat, Singapore
-Maxwell Food Centre, Singapore
-Geylang Road, Singapore
+District I (Várkerület), Budapest, Hungary
+District II, Budapest, Hungary
+District III (Óbuda-Békásmegyer), Budapest, Hungary
+District IV (Újpest), Budapest, Hungary
+District V (Belváros-Lipótváros), Budapest, Hungary
+District VI (Terézváros), Budapest, Hungary
+District VII (Erzsébetváros), Budapest, Hungary
+District VIII (Józsefváros), Budapest, Hungary
+District IX (Ferencváros), Budapest, Hungary
+District X (Kőbánya), Budapest, Hungary
+District XI (Újbuda), Budapest, Hungary
+District XII (Hegyvidék), Budapest, Hungary
+District XIII (Angyalföld), Budapest, Hungary
+District XIV (Zugló), Budapest, Hungary
+District XV (Rákospalota), Budapest, Hungary
+District XVI (Mátyásföld), Budapest, Hungary
+District XVII (Rákosmente), Budapest, Hungary
+District XVIII (Pestszentlőrinc-Pestszentimre), Budapest, Hungary
+District XIX (Kispest), Budapest, Hungary
+District XX (Pesterzsébet), Budapest, Hungary
+District XXI (Csepel), Budapest, Hungary
+District XXII (Budafok-Tétény), Budapest, Hungary
+District XXIII (Soroksár), Budapest, Hungary
+Castle District (Várnegyed), Budapest, Hungary
+Tabán, Budapest, Hungary
+Krisztinaváros, Budapest, Hungary
+Víziváros, Budapest, Hungary
+Újlipótváros, Budapest, Hungary
+Marina Part, Budapest, Hungary
+Lipótváros, Budapest, Hungary
+Belváros, Budapest, Hungary
+Terézváros, Budapest, Hungary
+Erzsébetváros, Budapest, Hungary
+New York Palace area, Budapest, Hungary
+Józsefváros Palace Quarter, Budapest, Hungary
+Corvin Quarter, Budapest, Hungary
+Ferencváros – Bakáts tér area, Budapest, Hungary
+Ferencváros – Belső Ferencváros, Budapest, Hungary
+Kelenföld, Budapest, Hungary
+Gazdagrét, Budapest, Hungary
+Sasad, Budapest, Hungary
+Sashegy, Budapest, Hungary
+Gellérthegy, Budapest, Hungary
+Lágymányos, Budapest, Hungary
+Pasarét, Budapest, Hungary
+Rózsadomb, Budapest, Hungary
+Zöldmál, Budapest, Hungary
+Felhévíz, Budapest, Hungary
+Óbuda Fő tér area, Budapest, Hungary
+Kaszásdűlő, Budapest, Hungary
+Váci Street, Budapest, Hungary
+Vörösmarty Square, Budapest, Hungary
+Andrássy Avenue, Budapest, Hungary
+Oktogon, Budapest, Hungary
+Bajcsy-Zsilinszky Road, Budapest, Hungary
+Nagymező Street, Budapest, Hungary
+Kiraly Street, Budapest, Hungary
+Kazinczy Street (Ruin Bars District), Budapest, Hungary
+Dob Street, Budapest, Hungary
+Gozsdu Udvar, Budapest, Hungary
+Ráday Street, Budapest, Hungary
+Bálna Budapest, Budapest, Hungary
+Bartók Béla Boulevard, Budapest, Hungary
+Móricz Zsigmond Square, Budapest, Hungary
+Margaret Island, Budapest, Hungary
+Buda Castle, Budapest, Hungary
+Fisherman’s Bastion area, Budapest, Hungary
+Clark Ádám Square, Budapest, Hungary
+Széll Kálmán Square, Budapest, Hungary
+Margit körút, Budapest, Hungary
+Fény Street Market area, Budapest, Hungary
+Hősök tere, Budapest, Hungary
+City Park (Városliget), Budapest, Hungary
+Kopaszi Dam (Kopaszi-gát), Budapest, Hungary
+Római Part, Budapest, Hungary
+Újpest Centre, Budapest, Hungary
+Kőbánya Központ, Budapest, Hungary
