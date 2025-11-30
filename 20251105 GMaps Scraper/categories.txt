@@ -9,3 +9,20 @@ street food
 steakhouse
 seafood
 Foodcourt
+halas étterem
+ételudvar
+borbár
+bisztró
+kávézó
+bár
+étterem
+csárda
+cukrászda
+pékség
+pub
+kocsma
+söröző
+borozó
+ételbár
+gyorsétterem
+fagylaltozó
