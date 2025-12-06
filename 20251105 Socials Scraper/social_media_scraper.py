@@ -561,6 +561,10 @@ class SocialMediaScraper:
         if not url or url.strip() == '':
             return result
 
+        # 🔥 Hard limit egy webhelyre, hogy semmilyen bug ne tudjon 2 napig pörögni
+        row_start_time = time.time()
+        HARD_LIMIT = self.max_scrape_time + 10  # pl. max_scrape_time=25 mellett 35 sec / domain
+
         # Ensure URL has protocol
         url = url.strip()
         if not url.startswith(('http://', 'https://')):
@@ -599,16 +603,27 @@ class SocialMediaScraper:
 
             # Check all pages
             for full_url in pages_to_check:
+                # hard wall erre a website-ra is
+                if time.time() - row_start_time > HARD_LIMIT:
+                    logger.warning(f"Hard time limit exceeded for {url}, aborting scrape_website early.")
+                    break
+
                 # faliórás guard: ha túl sok idő ment el, leállunk
                 if time.time() - start_time > self.max_scrape_time:
                     logger.warning(f"Max scrape time exceeded for {url}, stopping page checks.")
                     break
 
                 logger.info(f"Checking page: {full_url}")
-                
+
                 content = await self.fetch_page_content(page, full_url)
                 if not content:
                     continue
+
+                # 🔥 Nagyon nagy oldalak levágása, hogy a regexek ne pörgessék végtelenül a CPU-t
+                MAX_CONTENT_LEN = 500_000  # kb. 500 KB szöveg bőven elég, hogy megtaláljuk a kontaktot és a social linkeket
+                if len(content) > MAX_CONTENT_LEN:
+                    logger.info(f"Content for {full_url} too large ({len(content)} chars), truncating to {MAX_CONTENT_LEN}.")
+                    content = content[:MAX_CONTENT_LEN]
 
                 # 1) Extract emails using regex
                 emails_in_page = self.extract_emails(content)
