@@ -4,18 +4,23 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 
 
 def create_driver():
     options = Options()
-    options.add_argument("--headless=new")
+    # régi: --headless=new → ezt cseréljük stabilabb headless módra
+    options.add_argument("--headless=chrome")
     options.add_argument("--window-size=1280,1000")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
+    # WebGL / rasterizer tiltás: Mapsnél csökkenti a tab crash-t
+    options.add_argument("--disable-webgl")
+    options.add_argument("--disable-software-rasterizer")
     options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-features=VizDisplayCompositor")
     driver = webdriver.Chrome(options=options)
     return driver
 
@@ -42,6 +47,18 @@ def scroll_and_extract_links(driver, query):
         )
     except TimeoutException:
         print(f"  [TIMEOUT] Initial load timeout for query: {query}")
+        return []
+    except WebDriverException as e:
+        msg = str(e)
+        print(f"  [WEBDRIVER ERROR] Initial load error for query: {query} -> {msg}")
+        traceback.print_exc()
+
+        # 🔥 Ha konkrétan tab crashed / session deleted, dobjuk tovább,
+        # hogy a külső try újraindítsa a drivert
+        if "tab crashed" in msg.lower() or "session deleted" in msg.lower():
+            raise
+
+        # Egyéb WebDriver hibáknál csak üres listával visszatérünk
         return []
     except Exception as e:
         print(f"  [ERROR] Initial load error for query: {query} -> {e}")
@@ -146,6 +163,17 @@ if __name__ == '__main__':
     try:
         for i, query in enumerate(queries, 1):
             print(f"\n--- Processing query {i}/{len(queries)} ---")
+
+            # 🔁 Minden 100. query után indítsunk friss Chrome-ot,
+            # hogy ne fújódjon fel egyetlen session
+            if i % 100 == 1 and i != 1:
+                print(f"--- Restarting driver at query {i} to avoid Chrome bloat ---")
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+                driver = create_driver()
+
             try:
                 links = search_query(driver, query)
                 print(f"  Query returned {len(links)} links")
@@ -179,5 +207,3 @@ if __name__ == '__main__':
         except Exception:
             pass
         print(f"\nProcess completed. Total unique links collected: {len(all_links)}")
-
-
