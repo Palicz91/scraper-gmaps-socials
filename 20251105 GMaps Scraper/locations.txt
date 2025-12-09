@@ -1,77 +1,102 @@
-District I (Várkerület), Budapest, Hungary
-District II, Budapest, Hungary
-District III (Óbuda-Békásmegyer), Budapest, Hungary
-District IV (Újpest), Budapest, Hungary
-District V (Belváros-Lipótváros), Budapest, Hungary
-District VI (Terézváros), Budapest, Hungary
-District VII (Erzsébetváros), Budapest, Hungary
-District VIII (Józsefváros), Budapest, Hungary
-District IX (Ferencváros), Budapest, Hungary
-District X (Kőbánya), Budapest, Hungary
-District XI (Újbuda), Budapest, Hungary
-District XII (Hegyvidék), Budapest, Hungary
-District XIII (Angyalföld), Budapest, Hungary
-District XIV (Zugló), Budapest, Hungary
-District XV (Rákospalota), Budapest, Hungary
-District XVI (Mátyásföld), Budapest, Hungary
-District XVII (Rákosmente), Budapest, Hungary
-District XVIII (Pestszentlőrinc-Pestszentimre), Budapest, Hungary
-District XIX (Kispest), Budapest, Hungary
-District XX (Pesterzsébet), Budapest, Hungary
-District XXI (Csepel), Budapest, Hungary
-District XXII (Budafok-Tétény), Budapest, Hungary
-District XXIII (Soroksár), Budapest, Hungary
-Castle District (Várnegyed), Budapest, Hungary
-Tabán, Budapest, Hungary
-Krisztinaváros, Budapest, Hungary
-Víziváros, Budapest, Hungary
-Újlipótváros, Budapest, Hungary
-Marina Part, Budapest, Hungary
-Lipótváros, Budapest, Hungary
-Belváros, Budapest, Hungary
-Terézváros, Budapest, Hungary
-Erzsébetváros, Budapest, Hungary
-New York Palace area, Budapest, Hungary
-Józsefváros Palace Quarter, Budapest, Hungary
-Corvin Quarter, Budapest, Hungary
-Ferencváros – Bakáts tér area, Budapest, Hungary
-Ferencváros – Belső Ferencváros, Budapest, Hungary
-Kelenföld, Budapest, Hungary
-Gazdagrét, Budapest, Hungary
-Sasad, Budapest, Hungary
-Sashegy, Budapest, Hungary
-Gellérthegy, Budapest, Hungary
-Lágymányos, Budapest, Hungary
-Pasarét, Budapest, Hungary
-Rózsadomb, Budapest, Hungary
-Zöldmál, Budapest, Hungary
-Felhévíz, Budapest, Hungary
-Óbuda Fő tér area, Budapest, Hungary
-Kaszásdűlő, Budapest, Hungary
-Váci Street, Budapest, Hungary
-Vörösmarty Square, Budapest, Hungary
-Andrássy Avenue, Budapest, Hungary
-Oktogon, Budapest, Hungary
-Bajcsy-Zsilinszky Road, Budapest, Hungary
-Nagymező Street, Budapest, Hungary
-Kiraly Street, Budapest, Hungary
-Kazinczy Street (Ruin Bars District), Budapest, Hungary
-Dob Street, Budapest, Hungary
-Gozsdu Udvar, Budapest, Hungary
-Ráday Street, Budapest, Hungary
-Bálna Budapest, Budapest, Hungary
-Bartók Béla Boulevard, Budapest, Hungary
-Móricz Zsigmond Square, Budapest, Hungary
-Margaret Island, Budapest, Hungary
-Buda Castle, Budapest, Hungary
-Fisherman’s Bastion area, Budapest, Hungary
-Clark Ádám Square, Budapest, Hungary
-Széll Kálmán Square, Budapest, Hungary
-Margit körút, Budapest, Hungary
-Fény Street Market area, Budapest, Hungary
-Hősök tere, Budapest, Hungary
-City Park (Városliget), Budapest, Hungary
-Kopaszi Dam (Kopaszi-gát), Budapest, Hungary
-Római Part, Budapest, Hungary
-Újpest Centre, Budapest, Hungary
-Kőbánya Központ, Budapest, Hungary
+Belváros, Debrecen, Hungary
+Nagyerdő, Debrecen, Hungary
+Újkert, Debrecen, Hungary
+Tócóskert, Debrecen, Hungary
+Tócóvölgy, Debrecen, Hungary
+Vénkert, Debrecen, Hungary
+Libakert, Debrecen, Hungary
+Dobozi-kert, Debrecen, Hungary
+Erzsébet-telep, Debrecen, Hungary
+Lencztelep, Debrecen, Hungary
+Józsa, Debrecen, Hungary
+Piac Street, Debrecen, Hungary
+Kossuth Square, Debrecen, Hungary
+Nagytemplom Area, Debrecen, Hungary
+Nagyerdei Park, Debrecen, Hungary
+Egyetem Square, Debrecen, Hungary
+Déri Square, Debrecen, Hungary
+Aquaticum Area, Debrecen, Hungary
+Belváros, Szeged, Hungary
+Felsőváros, Szeged, Hungary
+Alsóváros, Szeged, Hungary
+Móraváros, Szeged, Hungary
+Rókus, Szeged, Hungary
+Tarján, Szeged, Hungary
+Odessza, Szeged, Hungary
+Újszeged, Szeged, Hungary
+Szentmihály, Szeged, Hungary
+Petőfitelep, Szeged, Hungary
+Kárász Street, Szeged, Hungary
+Dugonics Square, Szeged, Hungary
+Dóm Square, Szeged, Hungary
+Széchenyi Square, Szeged, Hungary
+Tisza Riverbank, Szeged, Hungary
+Anna Bath Area, Szeged, Hungary
+Újszegedi Liget, Szeged, Hungary
+Belváros, Miskolc, Hungary
+Avas, Miskolc, Hungary
+Diósgyőr, Miskolc, Hungary
+Tapolca, Miskolc, Hungary
+Lillafüred, Miskolc, Hungary
+Görömböly, Miskolc, Hungary
+Hejőcsaba, Miskolc, Hungary
+Selyemrét, Miskolc, Hungary
+Csabai Kapu, Miskolc, Hungary
+Széchenyi Street, Miskolc, Hungary
+Avas Lookout Area, Miskolc, Hungary
+Diósgyőr Castle Area, Miskolc, Hungary
+Tapolca Cave Bath Area, Miskolc, Hungary
+Lillafüred Lake Area, Miskolc, Hungary
+Belváros, Pécs, Hungary
+Kertváros, Pécs, Hungary
+Uránváros, Pécs, Hungary
+Mecsekszabolcs, Pécs, Hungary
+Donátus, Pécs, Hungary
+Patacs, Pécs, Hungary
+Rózsadomb, Pécs, Hungary
+Zsolnay Quarter, Pécs, Hungary
+Király Street, Pécs, Hungary
+Széchenyi Square, Pécs, Hungary
+Káptalan Street, Pécs, Hungary
+Zsolnay Cultural Quarter, Pécs, Hungary
+Tettye, Pécs, Hungary
+TV Tower Area, Pécs, Hungary
+Belváros, Győr, Hungary
+Révfalu, Győr, Hungary
+Marcalváros I, Győr, Hungary
+Marcalváros II, Győr, Hungary
+Adyváros, Győr, Hungary
+Sziget, Győr, Hungary
+Nádorváros, Győr, Hungary
+Pinnyéd, Győr, Hungary
+Baross Street, Győr, Hungary
+Széchenyi Square, Győr, Hungary
+Dunakapu Square, Győr, Hungary
+Káptalandomb Area, Győr, Hungary
+Rába Quelle Area, Győr, Hungary
+Belváros, Nyíregyháza, Hungary
+Örökösföld, Nyíregyháza, Hungary
+Jósaváros, Nyíregyháza, Hungary
+Hímes, Nyíregyháza, Hungary
+Sóstóhegy, Nyíregyháza, Hungary
+Sóstógyógyfürdő, Nyíregyháza, Hungary
+Borbánya, Nyíregyháza, Hungary
+Kertváros, Nyíregyháza, Hungary
+Kossuth Square, Nyíregyháza, Hungary
+Dózsa György Street, Nyíregyháza, Hungary
+Sóstó Zoo Area, Nyíregyháza, Hungary
+Sóstó Museum Village Area, Nyíregyháza, Hungary
+Bujtosi Lake Area, Nyíregyháza, Hungary
+Belváros, Kecskemét, Hungary
+Széchenyiváros, Kecskemét, Hungary
+Rákócziváros, Kecskemét, Hungary
+Bethlenváros, Kecskemét, Hungary
+Kadafalva, Kecskemét, Hungary
+Hetényegyháza, Kecskemét, Hungary
+Máriaváros, Kecskemét, Hungary
+Szentkirály, Kecskemét, Hungary
+Kossuth Square, Kecskemét, Hungary
+Főtér, Kecskemét, Hungary
+Szabadság Square, Kecskemét, Hungary
+Katona József Square, Kecskemét, Hungary
+Benkó Zoltán Leisure Center Area, Kecskemét, Hungary
