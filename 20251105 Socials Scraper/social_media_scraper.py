@@ -6,17 +6,15 @@ This script reads a CSV file with business information and scrapes social media
 information from their websites using Playwright browser automation.
 """
 
-import csv
 import re
 import time
 import logging
-import os
 import signal
 import sys
 from urllib.parse import urljoin, urlparse
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 import asyncio
-from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeoutError
+from playwright.async_api import async_playwright, Page, TimeoutError as PlaywrightTimeoutError
 import pandas as pd
 import chardet
 
@@ -30,12 +28,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-# problémás domainek, amiket instant skipelünk
-BAD_DOMAIN_PATTERNS = [
-    "gulfcar.com",
-    "autocarni.com",
-]
 
 class SocialMediaScraper:
     def __init__(self, headless: bool = True, timeout: int = 30000, max_scrape_time: int = 60):
@@ -53,11 +45,6 @@ class SocialMediaScraper:
         self.browser = None
         self.playwright = None
         
-        # Blacklisted domains that are known to be problematic
-        self.BAD_DOMAIN_PATTERNS = [
-            "gulfcar.com"
-        ]
-        
         # Common contact page paths
         self.COMMON_CONTACT_PATHS = [
             "",              # főoldal
@@ -74,7 +61,6 @@ class SocialMediaScraper:
         self.email_patterns = [
             r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         ]
-        
         
         # Social media URL patterns
         self.social_patterns = {
@@ -123,6 +109,12 @@ class SocialMediaScraper:
             'test@', 'temp@', 'example@', 'sample@', 'dummy@'
         ]
 
+    def normalize_hu(self, num: str) -> str:
+        """Normalize Hungarian phone numbers to +36 format."""
+        if num.startswith('06'):
+            return '+36' + num[2:]
+        return num
+
     def get_best_email(self, emails: List[str]) -> str:
         """Score emails and return the most professional one."""
         def score(email):
@@ -168,11 +160,27 @@ class SocialMediaScraper:
             matches = re.findall(pattern, text, re.IGNORECASE)
             emails.extend(matches)
 
-        # obfuszkált formák
-        emails.extend(self._normalize_obfuscated(text))
+        # obfuszkált formák csak fallbackként
+        if not emails:
+            emails.extend(self._normalize_obfuscated(text))
 
-        # Remove duplicates and convert to lowercase
-        emails = list(set([email.lower() for email in emails]))
+        # Email szűrés szemét fájlnevek és rossz formátumok ellen
+        bad_suffixes = (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".css", ".js")
+        cleaned = []
+        for e in emails:
+            if " " in e:
+                continue
+            if e.endswith(bad_suffixes):
+                continue
+            if "@" not in e:
+                continue
+            local, _, dom = e.partition("@")
+            if "." not in dom:
+                continue
+            cleaned.append(e.lower())
+        
+        # Remove duplicates
+        emails = list(set(cleaned))
         
         # Return all emails comma-separated
         return ', '.join(emails)
@@ -226,9 +234,12 @@ class SocialMediaScraper:
                 if 7 <= len(num) <= 15:
                     candidates.add(self.normalize_hu(num))
 
-        # magyar preferencia scoring
+        # Combined scoring function (Hungarian + international)
         def score(num: str) -> int:
             s = 0
+            digits = re.sub(r"\D", "", num)
+            
+            # Hungarian preferences (primary)
             if num.startswith('+36'):
                 s += 3
             elif num.startswith('06'):
@@ -240,6 +251,21 @@ class SocialMediaScraper:
                 s += 2
             elif num.startswith('0620') or num.startswith('0630') or num.startswith('0670'):
                 s += 2
+                
+            # International quality indicators
+            if num.startswith("+"): 
+                s += 2  # E.164 format
+            if 10 <= len(digits) <= 15: 
+                s += 2  # realistic length
+            if len(digits) == 11 and digits.startswith("1"): 
+                s += 1  # USA/Canada common
+            if len(set(digits)) > 4: 
+                s += 1  # not "0000000" type
+            if any(num.startswith(p) for p in ["+1", "+44", "+49", "+33", "+39", "+34"]): 
+                s += 1  # major country codes
+            if digits.startswith("0") and not num.startswith("+"): 
+                s -= 1  # too "local"
+                
             return s
 
         # Sort by score and limit results
@@ -248,23 +274,27 @@ class SocialMediaScraper:
 
         return ', '.join(phones), ''
 
-    def normalize_hu(self, num: str) -> str:
-        """Normalize Hungarian phone numbers to +36 format."""
-        if num.startswith('06'):
-            return '+36' + num[2:]
-        return num
-
-    async def fetch_page_content(self, page: Page, url: str) -> str:
-        """Fetch page content with extra timeout and error handling."""
+    async def fetch_page_content_with_timeout(self, page: Page, url: str, timeout: float) -> str:
+        """Fetch page content with dynamic timeout based on remaining time."""
         try:
-            async def _goto():
+            async def _goto_and_text():
                 await page.goto(url, timeout=self.timeout, wait_until="domcontentloaded")
-                await asyncio.sleep(0.5)
-                return await page.content()
+                await asyncio.sleep(0.2)
+                try:
+                    return await page.evaluate("() => document.body ? document.body.innerText : ''")
+                except Exception:
+                    return ""
 
-            # extra safeguard: ha a goto+content is túl sokáig tart, dobjuk
-            return await asyncio.wait_for(_goto(), timeout=float(self.max_scrape_time))
-        except (PlaywrightTimeoutError, asyncio.TimeoutError) as e:
+            # Use dynamic timeout
+            content = await asyncio.wait_for(_goto_and_text(), timeout=timeout)
+
+            MAX_CONTENT_LEN = 50_000
+            if len(content) > MAX_CONTENT_LEN:
+                logger.info(f"Text too large for {url} ({len(content)} chars), truncating to {MAX_CONTENT_LEN}.")
+                content = content[:MAX_CONTENT_LEN]
+            return content
+
+        except (asyncio.TimeoutError, PlaywrightTimeoutError) as e:
             logger.warning(f"Timeout loading {url}: {e}")
             return ""
         except Exception as e:
@@ -284,6 +314,50 @@ class SocialMediaScraper:
                     social_links[platform] = link
                     break
         return social_links
+
+    async def extract_social_links_dom(self, page: Page) -> Dict[str, str]:
+        """Extract social links from DOM hrefs (fast, no regex on huge text)."""
+        try:
+            hrefs = await asyncio.wait_for(
+                page.eval_on_selector_all(
+                    "a[href]",
+                    "els => els.map(e => e.getAttribute('href')).filter(Boolean)"
+                ),
+                timeout=2.0
+            )
+        except asyncio.TimeoutError:
+            return {}
+        except Exception:
+            return {}
+
+        def pick(patterns):
+            for h in hrefs:
+                if not h:
+                    continue
+                hh = h.strip()
+                if hh.startswith("//"):
+                    hh = "https:" + hh
+                if hh.startswith("/"):
+                    continue
+                low = hh.lower()
+                for p in patterns:
+                    if p in low:
+                        return hh
+            return ""
+
+        out = {}
+        fb = pick(["facebook.com/", "fb.com/", "m.facebook.com/"])
+        ig = pick(["instagram.com/", "instagr.am/"])
+        li = pick(["linkedin.com/in/", "linkedin.com/company/"])
+        tw = pick(["x.com/", "twitter.com/"])
+        tt = pick(["tiktok.com/", "vm.tiktok.com/"])
+
+        if fb: out["facebook"] = fb
+        if ig: out["instagram"] = ig
+        if li: out["linkedin"] = li
+        if tw: out["twitter"] = tw
+        if tt: out["tiktok"] = tt
+        return out
 
     async def check_meta_tags(self, page: Page, result: Dict[str, str], base_url: str):
         """Check meta tags for social media links."""
@@ -344,17 +418,263 @@ class SocialMediaScraper:
                 confidence = result['confidence']
                 logger.info(f"Detected encoding: {encoding} (confidence: {confidence:.2f})")
 
-                # --- EZT ADD HOZZÁ ---
                 if encoding is None or confidence < 0.7:
                     encoding = 'utf-8-sig'
                 elif encoding.lower() in ['iso-8859-2', 'windows-1250']:
                     encoding = 'cp1250'
-                # ----------------------
 
                 return encoding
         except Exception as e:
             logger.warning(f"Could not detect encoding: {e}")
             return 'utf-8'
+
+    async def scrape_website(self, url: str, page: Page) -> Dict[str, str]:
+        """
+        Scrape a website for social media information by checking multiple pages.
+        
+        Args:
+            url: Website URL to scrape
+            page: Playwright page object to use for scraping
+            
+        Returns:
+            Dictionary with scraped social media information
+        """
+        result = {
+            'email': '',
+            'email_raw': '',
+            'phone': '',
+            'whatsapp': '',
+            'facebook': '',
+            'instagram': '',
+            'linkedin': '',
+            'twitter': '',
+            'tiktok': ''
+        }
+        
+        if not url or url.strip() == '':
+            return result
+
+        # Per-site hard stop timer
+        site_start = time.time()
+        HARD_LIMIT = self.max_scrape_time + 5
+        
+        try:
+            # Ensure URL has protocol
+            if not url.startswith(('http://', 'https://')):
+                url = 'https://' + url
+            
+            logger.info(f"Scraping: {url}")
+            
+            parsed = urlparse(url)
+            base = f"{parsed.scheme}://{parsed.netloc}"
+
+            all_emails = set()
+            all_phones = set()
+            all_whatsapp = set()
+            social_links_final: Dict[str, str] = {}
+
+            # 0) Check the ORIGINAL URL first
+            pages_to_check = [url]
+
+            # 1) Then add typical contact pages on the domain
+            for path in self.COMMON_CONTACT_PATHS:
+                full_url = base if path == "" else urljoin(base + "/", path)
+                if full_url not in pages_to_check:
+                    pages_to_check.append(full_url)
+
+            # Check all pages
+            for full_url in pages_to_check:
+                # Hard limit check - stop if nearly at limit
+                time_left = HARD_LIMIT - (time.time() - site_start)
+                if time_left <= 4:
+                    logger.warning(f"Hard limit nearly reached for {url}, stopping page loop.")
+                    break
+                
+                logger.info(f"Checking page: {full_url}")
+                
+                # Dynamic timeout for page fetch based on remaining time
+                page_timeout = min(8.0, max(2.0, time_left - 2.0))
+                content = await self.fetch_page_content_with_timeout(page, full_url, page_timeout)
+                if not content:
+                    continue
+
+                # Check again after fetch - if very little time left, only do DOM social
+                time_left = HARD_LIMIT - (time.time() - site_start)
+                if time_left <= 2:
+                    logger.warning(f"Very little time left for {url}, only checking DOM social links.")
+                    # Only do quick DOM social extraction
+                    try:
+                        dom_social = await asyncio.wait_for(self.extract_social_links_dom(page), timeout=1.5)
+                        for platform, link in dom_social.items():
+                            if platform not in social_links_final:
+                                social_links_final[platform] = link
+                                logger.info(f"Found {platform} (DOM): {link}")
+                    except asyncio.TimeoutError:
+                        pass
+                    break
+
+                # DOM social first (fast)
+                try:
+                    dom_social = await asyncio.wait_for(self.extract_social_links_dom(page), timeout=2.5)
+                except asyncio.TimeoutError:
+                    dom_social = {}
+
+                for platform, link in dom_social.items():
+                    if platform not in social_links_final:
+                        social_links_final[platform] = link
+                        logger.info(f"Found {platform} (DOM): {link}")
+
+                # 1) Extract emails using regex (with timeout)
+                logger.info("Start extract_emails")
+                try:
+                    emails_in_page = await asyncio.wait_for(
+                        asyncio.to_thread(self.extract_emails, content),
+                        timeout=1.5
+                    )
+                    if emails_in_page:
+                        for e in emails_in_page.split(","):
+                            e = e.strip()
+                            if e:
+                                all_emails.add(e)
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout extracting emails from {full_url}")
+                    emails_in_page = ""
+                logger.info("Done extract_emails")
+
+                # 2) Extract mailto links from DOM with timeout
+                try:
+                    mailtos = await asyncio.wait_for(
+                        page.eval_on_selector_all(
+                            "a[href^='mailto:']",
+                            "elements => elements.map(el => el.getAttribute('href'))"
+                        ),
+                        timeout=1.5
+                    )
+                    for m in mailtos or []:
+                        m = m.replace("mailto:", "").strip()
+                        if m:
+                            all_emails.add(m)
+                except asyncio.TimeoutError:
+                    logger.debug("Timeout extracting mailto links")
+                except Exception:
+                    pass
+
+                # 3) Extract tel links from DOM with timeout (cleanest source)
+                try:
+                    tels = await asyncio.wait_for(
+                        page.eval_on_selector_all(
+                            "a[href^='tel:']",
+                            "elements => elements.map(el => el.getAttribute('href'))"
+                        ),
+                        timeout=1.5
+                    )
+                    for t in tels or []:
+                        num = re.sub(r'[^\d+]', '', t.replace('tel:', ''))
+                        if 7 <= len(num) <= 15:
+                            all_phones.add(self.normalize_hu(num))
+                except asyncio.TimeoutError:
+                    logger.debug("Timeout extracting tel links")
+                except Exception:
+                    pass
+
+                # 4) Extract phone numbers from text (with timeout)
+                logger.info("Start extract_phone_numbers")
+                try:
+                    phones, whats = await asyncio.wait_for(
+                        asyncio.to_thread(self.extract_phone_numbers, content),
+                        timeout=1.5
+                    )
+                    if phones:
+                        for p in phones.split(","):
+                            p = p.strip()
+                            if p:
+                                all_phones.add(p)
+                    if whats:
+                        for w in whats.split(","):
+                            w = w.strip()
+                            if w:
+                                all_whatsapp.add(w)
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout extracting phones from {full_url}")
+                    phones, whats = "", ""
+                logger.info("Done extract_phone_numbers")
+
+                # 5) Extract social media links (with timeout) - only if we don't have key platforms yet
+                if not (social_links_final.get("facebook") or social_links_final.get("instagram") or social_links_final.get("linkedin")):
+                    logger.info("Start extract_social_links (regex fallback)")
+                    try:
+                        social_links = await asyncio.wait_for(
+                            asyncio.to_thread(self.extract_social_links, content, full_url),
+                            timeout=0.8
+                        )
+                        for platform, link in social_links.items():
+                            # Only add if we don't have one yet (don't overwrite)
+                            if platform not in social_links_final:
+                                social_links_final[platform] = link
+                                logger.info(f"Found {platform} (regex): {link}")
+                    except asyncio.TimeoutError:
+                        logger.warning(f"Timeout extracting social links from {full_url}")
+                        social_links = {}
+                    logger.info("Done extract_social_links")
+                else:
+                    logger.info("Skipping regex social extraction - already have key platforms from DOM")
+                
+                # Update result for early exit check
+                if all_emails:
+                    result['email'] = self.get_best_email(list(all_emails))
+                if all_phones:
+                    result['phone'] = ', '.join(sorted(list(all_phones), key=lambda x: (x.startswith('+36'), x.startswith('06'), len(x)), reverse=True)[:3])
+                for platform, link in social_links_final.items():
+                    result[platform] = link
+                
+                # Early exit: ha már van elég adat, ne menj tovább
+                if result['email'] and result['phone'] and (
+                    result['facebook'] or result['instagram'] or result['linkedin']
+                ):
+                    logger.info("Sufficient data found, stopping further page checks.")
+                    break
+            
+            # Compile final results
+            logger.info("Start final results compilation")
+            if all_emails:
+                result['email'] = self.get_best_email(list(all_emails))
+                result['email_raw'] = ', '.join(sorted(all_emails))
+                logger.info(f"Found best email: {result['email']}")
+                logger.info(f"All emails: {result['email_raw']}")
+            if all_phones:
+                # Sort phones by Hungarian preferences
+                ordered = sorted(list(all_phones), key=lambda x: (x.startswith('+36'), x.startswith('06'), len(x)), reverse=True)
+                result['phone'] = ', '.join(ordered[:3])
+                logger.info(f"Found phone numbers: {result['phone']}")
+            if all_whatsapp:
+                result['whatsapp'] = ', '.join(list(all_whatsapp))
+                logger.info(f"Found WhatsApp numbers: {result['whatsapp']}")
+            
+            for platform, link in social_links_final.items():
+                result[platform] = link
+                logger.info(f"Found {platform}: {link}")
+            logger.info("Done final results compilation")
+            
+            # Only check meta tags if we're missing social media links
+            if not (result["facebook"] or result["instagram"] or result["linkedin"] or result["twitter"] or result["tiktok"]):
+                try:
+                    await asyncio.wait_for(
+                        self.check_meta_tags(page, result, url),
+                        timeout=3.0
+                    )
+                except asyncio.TimeoutError:
+                    logger.debug(f"Timeout checking meta tags for {url}")
+                except Exception as e:
+                    logger.debug(f"Error checking meta tags for {url}: {e}")
+            
+        except PlaywrightTimeoutError:
+            logger.warning(f"Timeout while scraping {url}")
+        except asyncio.TimeoutError:
+            logger.warning(f"Overall timeout while scraping {url}")
+        except Exception as e:
+            logger.error(f"Error scraping {url}: {e}")
+        
+        return result
 
     async def process_csv(self, input_file: str, output_file: str):
         """
@@ -366,8 +686,23 @@ class SocialMediaScraper:
         """
         context = None
         try:
-            # Start one context for all websites (időnként reseteljük)
+            # Start one context and page globally for all websites
             context = await self.browser.new_context()
+            
+            # Globális gyorsítás: képek, videók, fontok, css, stb tiltása
+            async def route_handler(route):
+                rtype = route.request.resource_type
+                if rtype in ("image", "media", "font", "stylesheet"):
+                    await route.abort()
+                else:
+                    await route.continue_()
+
+            await context.route("**/*", route_handler)
+            
+            page = await context.new_page()
+            await page.set_viewport_size({"width": 1920, "height": 1080})
+            page.set_default_navigation_timeout(8000)  # 8s
+            page.set_default_timeout(3000)             # 3s selector timeoutokhoz
             
             # Detect file encoding first
             detected_encoding = self.detect_encoding(input_file)
@@ -409,8 +744,7 @@ class SocialMediaScraper:
             ]
             
             for col in social_columns:
-                if col not in df.columns:
-                    df[col] = ''
+                df[col] = ''
             
             # Create initial output file with headers
             df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=',')
@@ -419,65 +753,53 @@ class SocialMediaScraper:
             # Process each row with retry logic
             for index, row in df.iterrows():
                 website = row['website']
+                # Fix: Handle non-string website values
                 if pd.isna(website) or str(website).strip() == '':
                     logger.info(f"Row {index + 1}: No website URL, skipping")
                     continue
-
+                
                 website = str(website).strip()
-
-                # --- BLACKLIST CHECK ITT ---
-                parsed = urlparse(website if website.startswith(("http://", "https://")) else "https://" + website)
-                domain = parsed.netloc.lower()
-                if any(bad in domain for bad in BAD_DOMAIN_PATTERNS):
-                    logger.warning(f"Row {index + 1}: Blacklisted domain {domain}, skipping")
-                    continue
-                # ---------------------------
-
                 logger.info(f"Processing row {index + 1}/{len(df)}: {website}")
-
-                # per-URL új page
-                try:
-                    page = await context.new_page()
-                except Exception as e:
-                    logger.error(f"Could not open new page for {website}: {e}")
-                    # próbáljunk teljes context resetet
-                    try:
-                        await context.close()
-                    except Exception:
-                        pass
-                    context = await self.browser.new_context()
-                    page = await context.new_page()
-
-                # Retry logic for each website
-                social_data = {}
-                try:
-                    for attempt in range(2):  # 2 attempts
-                        try:
-                            social_data = await asyncio.wait_for(
-                                self.scrape_website(website, page),
-                                timeout=float(self.max_scrape_time)
-                            )
-                            break
-                        except asyncio.TimeoutError as e:
-                            logger.warning(f"Attempt {attempt + 1} TIMEOUT for {website}: {e}")
-                            if attempt == 1:
-                                raise
-                        except Exception as e:
-                            logger.warning(f"Attempt {attempt + 1} failed for {website}: {e}")
-                            if attempt == 1:
-                                raise
-                except Exception as e:
-                    logger.error(f"All attempts failed for {website}: {e}")
-                    social_data = {
-                        'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
-                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
-                    }
-                finally:
-                    # per-URL page bezárása, hogy ne maradjon „beragadt" állapot
+                
+                # Page refresh every 200 domains to prevent memory issues
+                if (index + 1) % 200 == 0:
+                    logger.info(f"Refreshing page at row {index + 1}")
                     try:
                         await page.close()
                     except Exception:
                         pass
+                    page = await context.new_page()
+                    await page.set_viewport_size({"width": 1920, "height": 1080})
+                    page.set_default_navigation_timeout(8000)
+                    page.set_default_timeout(3000)
+                
+                # Retry logic for each website with fresh page on retry
+                social_data = {}
+                for attempt in range(2):  # 2 attempts
+                    try:
+                        social_data = await asyncio.wait_for(
+                            self.scrape_website(website, page),
+                            timeout=float(self.max_scrape_time)
+                        )
+                        break
+                    except Exception as e:
+                        logger.warning(f"Attempt {attempt + 1} failed for {website}: {e}")
+                        if attempt == 0:  # First attempt failed, create fresh page for retry
+                            logger.info(f"Creating fresh page for retry of {website}")
+                            try:
+                                await page.close()
+                            except Exception:
+                                pass
+                            page = await context.new_page()
+                            await page.set_viewport_size({"width": 1920, "height": 1080})
+                            page.set_default_navigation_timeout(8000)
+                            page.set_default_timeout(3000)
+                        elif attempt == 1:  # Last attempt failed
+                            social_data = {
+                                'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
+                                'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
+                            }
+                            logger.error(f"All attempts failed for {website}")
                 
                 # Update the dataframe
                 df.at[index, 'scraped_email'] = social_data.get('email', '')
@@ -489,15 +811,6 @@ class SocialMediaScraper:
                 df.at[index, 'scraped_linkedin'] = social_data.get('linkedin', '')
                 df.at[index, 'scraped_twitter'] = social_data.get('twitter', '')
                 df.at[index, 'scraped_tiktok'] = social_data.get('tiktok', '')
-                
-                # X soronként context reset (pl. 200-nál)
-                if (index + 1) % 200 == 0:
-                    logger.info(f"Resetting browser context at row {index + 1}")
-                    try:
-                        await context.close()
-                    except Exception:
-                        pass
-                    context = await self.browser.new_context()
                 
                 # Mentsd csak minden 25. sor után (vagy az utolsó sor végén)
                 if (index + 1) % 25 == 0 or (index + 1) == len(df):
@@ -535,220 +848,10 @@ class SocialMediaScraper:
                 except Exception:
                     pass
 
-    async def scrape_website(self, url: str, page: Page) -> Dict[str, str]:
-        """
-        Scrape a website for social media information by checking multiple pages.
-        
-        Args:
-            url: Website URL to scrape
-            page: Playwright page object to use for scraping
-            
-        Returns:
-            Dictionary with scraped social media information
-        """
-        result = {
-            'email': '',
-            'email_raw': '',
-            'phone': '',
-            'whatsapp': '',
-            'facebook': '',
-            'instagram': '',
-            'linkedin': '',
-            'twitter': '',
-            'tiktok': ''
-        }
-        
-        if not url or url.strip() == '':
-            return result
-
-        # 🔥 Hard limit egy webhelyre, hogy semmilyen bug ne tudjon 2 napig pörögni
-        row_start_time = time.time()
-        HARD_LIMIT = self.max_scrape_time + 10  # pl. max_scrape_time=25 mellett 35 sec / domain
-
-        # Ensure URL has protocol
-        url = url.strip()
-        if not url.startswith(('http://', 'https://')):
-            url = 'https://' + url
-
-        # domain + blacklist check itt is (extra védelem)
-        parsed_for_domain = urlparse(url)
-        domain = parsed_for_domain.netloc.lower()
-        if any(bad in domain for bad in BAD_DOMAIN_PATTERNS):
-            logger.warning(f"Skipping blacklisted domain in scrape_website: {domain}")
-            return result
-
-        await page.set_viewport_size({"width": 1920, "height": 1080})
-        
-        try:
-            logger.info(f"Scraping: {url}")
-            
-            parsed = urlparse(url)
-            base = f"{parsed.scheme}://{parsed.netloc}"
-
-            start_time = time.time()  # ← FALIÓRA
-
-            all_emails = set()
-            all_phones = set()
-            all_whatsapp = set()
-            social_links_final = {}
-
-            # 0) Check the ORIGINAL URL first
-            pages_to_check = [url]
-
-            # 1) Then add typical contact pages on the domain
-            for path in self.COMMON_CONTACT_PATHS:
-                full_url = base if path == "" else urljoin(base + "/", path)
-                if full_url not in pages_to_check:
-                    pages_to_check.append(full_url)
-
-            # Check all pages
-            for full_url in pages_to_check:
-                # hard wall erre a website-ra is
-                if time.time() - row_start_time > HARD_LIMIT:
-                    logger.warning(f"Hard time limit exceeded for {url}, aborting scrape_website early.")
-                    break
-
-                # faliórás guard: ha túl sok idő ment el, leállunk
-                if time.time() - start_time > self.max_scrape_time:
-                    logger.warning(f"Max scrape time exceeded for {url}, stopping page checks.")
-                    break
-
-                logger.info(f"Checking page: {full_url}")
-
-                content = await self.fetch_page_content(page, full_url)
-                if not content:
-                    continue
-
-                # 🔥 Nagyon nagy oldalak levágása, hogy a regexek ne pörgessék végtelenül a CPU-t
-                MAX_CONTENT_LEN = 500_000  # kb. 500 KB szöveg bőven elég, hogy megtaláljuk a kontaktot és a social linkeket
-                if len(content) > MAX_CONTENT_LEN:
-                    logger.info(f"Content for {full_url} too large ({len(content)} chars), truncating to {MAX_CONTENT_LEN}.")
-                    content = content[:MAX_CONTENT_LEN]
-
-                # 1) Extract emails using regex
-                emails_in_page = self.extract_emails(content)
-                if emails_in_page:
-                    for e in emails_in_page.split(","):
-                        e = e.strip()
-                        if e:
-                            all_emails.add(e)
-
-                # 2) Extract mailto links from DOM
-                try:
-                    mailtos = await page.eval_on_selector_all(
-                        "a[href^='mailto:']",
-                        "elements => elements.map(el => el.getAttribute('href'))"
-                    )
-                    for m in mailtos or []:
-                        m = m.replace("mailto:", "").strip()
-                        if m:
-                            all_emails.add(m)
-                except Exception:
-                    pass
-
-                # 3) Extract tel links from DOM (cleanest source)
-                try:
-                    tels = await page.eval_on_selector_all(
-                        "a[href^='tel:']",
-                        "elements => elements.map(el => el.getAttribute('href'))"
-                    )
-                    for t in tels or []:
-                        num = re.sub(r'[^\d+]', '', t.replace('tel:', ''))
-                        if 7 <= len(num) <= 15:
-                            all_phones.add(self.normalize_hu(num))
-                except Exception:
-                    pass
-
-                # 4) Extract phone numbers from text
-                phones, whats = self.extract_phone_numbers(content)
-                if phones:
-                    for p in phones.split(","):
-                        p = p.strip()
-                        if p:
-                            all_phones.add(p)
-                if whats:
-                    for w in whats.split(","):
-                        w = w.strip()
-                        if w:
-                            all_whatsapp.add(w)
-
-                # 5) Extract social media links
-                social_links = self.extract_social_links(content, full_url)
-                for platform, link in social_links.items():
-                    # Only add if we don't have one yet (don't overwrite)
-                    if platform not in social_links_final:
-                        social_links_final[platform] = link
-                        logger.info(f"Found {platform}: {link}")
-                
-                # Update result for early exit check
-                if all_emails:
-                    result['email'] = self.get_best_email(list(all_emails))
-                if all_phones:
-                    result['phone'] = ', '.join(sorted(list(all_phones), key=lambda x: (x.startswith('+36'), x.startswith('06'), len(x)), reverse=True)[:3])
-                for platform, link in social_links_final.items():
-                    result[platform] = link
-                
-                # Early exit: ha már van elég adat, ne menj tovább
-                if result['email'] and result['phone'] and (
-                    result['facebook'] or result['instagram'] or result['linkedin']
-                ):
-                    logger.info("Sufficient data found, stopping further page checks.")
-                    break
-            
-            # Compile final results
-            if all_emails:
-                result['email'] = self.get_best_email(list(all_emails))
-                result['email_raw'] = ', '.join(sorted(all_emails))
-                logger.info(f"Found best email: {result['email']}")
-                logger.info(f"All emails: {result['email_raw']}")
-            if all_phones:
-                # Sort phones by Hungarian preferences
-                ordered = sorted(list(all_phones), key=lambda x: (x.startswith('+36'), x.startswith('06'), len(x)), reverse=True)
-                result['phone'] = ', '.join(ordered[:3])
-                logger.info(f"Found phone numbers: {result['phone']}")
-            if all_whatsapp:
-                result['whatsapp'] = ', '.join(list(all_whatsapp))
-                logger.info(f"Found WhatsApp numbers: {result['whatsapp']}")
-            
-            for platform, link in social_links_final.items():
-                result[platform] = link
-                logger.info(f"Found {platform}: {link}")
-            
-            # Also check for social media links in page source and meta tags from the last page
-            try:
-                await asyncio.wait_for(
-                    self.check_meta_tags(page, result, url),
-                    timeout=10.0
-                )
-            except asyncio.TimeoutError:
-                logger.warning(f"Timeout checking meta tags for {url}")
-            except Exception as e:
-                logger.warning(f"Error checking meta tags for {url}: {e}")
-            
-        except PlaywrightTimeoutError:
-            logger.warning(f"Timeout while scraping {url}")
-        except asyncio.TimeoutError:
-            logger.warning(f"Overall timeout while scraping {url}")
-        except Exception as e:
-            logger.error(f"Error scraping {url}: {e}")
-        
-        return result
-
-# Graceful shutdown handling
-def handle_exit(sig, frame):
-    logger.info("Graceful shutdown initiated...")
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, handle_exit)
-signal.signal(signal.SIGTERM, handle_exit)
-
 async def main():
     """Main function to run the scraper."""
-    scraper = SocialMediaScraper(
-        headless=True,
-        timeout=15000,      # 15s page goto timeout
-        max_scrape_time=25  # max 25s / website
-    )
+    # Updated with unified 8s timeout and faster max_scrape_time
+    scraper = SocialMediaScraper(headless=True, timeout=8000, max_scrape_time=25)
     
     try:
         await scraper.start_browser()
@@ -757,6 +860,14 @@ async def main():
         logger.error(f"Scraper failed: {e}")
     finally:
         await scraper.close_browser()
+
+# Graceful shutdown handling
+def handle_exit(sig, frame):
+    logger.info("Graceful shutdown initiated...")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, handle_exit)
+signal.signal(signal.SIGTERM, handle_exit)
 
 if __name__ == "__main__":
     asyncio.run(main())
