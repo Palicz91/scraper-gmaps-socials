@@ -161,7 +161,6 @@ class SocialMediaScraper:
                     '--safebrowsing-disable-auto-update',
                     '--js-flags=--max-old-space-size=512',  # V8 heap limit
                     '--renderer-process-limit=2',  # max 2 renderer process
-                    '--single-process',  # egy process-ben fut minden
                 ]
             )
             logger.info("Browser started successfully with memory optimizations")
@@ -563,7 +562,6 @@ class SocialMediaScraper:
                             '--safebrowsing-disable-auto-update',
                             '--js-flags=--max-old-space-size=512',
                             '--renderer-process-limit=2',
-                            '--single-process'
                         ]
                     )
                     context = await self.browser.new_context()
