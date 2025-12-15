@@ -29,6 +29,9 @@ def create_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--disable-infobars")
+    options.add_argument("--disable-webgl")
+    options.add_argument("--disable-software-rasterizer")
+    options.add_argument("--disable-features=VizDisplayCompositor")
 
     # saját profil: segíti a stabil cookie-működést
     profile_dir = os.path.expanduser('~/selenium_profile')
@@ -209,13 +212,7 @@ def save_single_record_to_csv(record, filename="places_data.csv"):
     ]
     
     try:
-        # Check if file exists to determine if we need to write header
-        file_exists = False
-        try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                file_exists = True
-        except FileNotFoundError:
-            file_exists = False
+        file_exists = os.path.exists(filename)
         
         with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -284,27 +281,13 @@ def main():
             print("🔁 Restarted browser to clear memory")
 
         place_data = get_place_data(driver, link)
-
+        
         if place_data:
             save_single_record_to_csv(place_data, "places_data.csv")
             processed_count += 1
             print(f"Progress: {processed_count} places processed successfully")
         else:
-            logging.warning(f"Data extraction failed for {link}, retrying automatically...")
-            try:
-                for retry in range(2):
-                    time.sleep(0.2)  # 1 másodperc helyett 0.2
-                    place_data = get_place_data(driver, link)
-                    if place_data:
-                        save_single_record_to_csv(place_data, "places_data.csv")
-                        processed_count += 1
-                        break
-                else:
-                    logging.error(f"Giving up on {link} after 2 retries.")
-            except Exception as e:
-                logging.exception(f"Critical failure on retry for {link}: {e}")
-
-        # time.sleep(1)  # felesleges extra várakozás volt
+            logging.error(f"Failed to extract data for {link}")
 
         # minden 5 link után elmentjük a haladást
         if i % 5 == 0:
