@@ -20,6 +20,7 @@ import asyncio
 from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeoutError
 import pandas as pd
 import chardet
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 BAD_DOMAIN_PATTERNS = [
     "gulfcar.com",
     "autocarni.com",
+    "saulautosales.com",  # végtelen hang
 ]
 
 class SocialMediaScraper:
@@ -381,6 +383,25 @@ class SocialMediaScraper:
         """
         context = None
         try:
+            # Progress file kezelés
+            progress_file = Path("scraper_progress.txt")
+            start_index = 0
+            if progress_file.exists():
+                try:
+                    start_index = int(progress_file.read_text().strip())
+                    logger.info(f"Resuming from row {start_index}")
+                except Exception as e:
+                    logger.warning(f"Could not read progress file: {e}")
+                    start_index = 0
+            
+            # Ha folytatunk, az output.csv-ből olvassunk (ott vannak az eddigi eredmények)
+            if start_index > 0 and Path(output_file).exists():
+                file_to_read = output_file
+                logger.info(f"Resuming: reading from {output_file}")
+            else:
+                file_to_read = input_file
+                logger.info(f"Fresh start: reading from {input_file}")
+            
             # Start one context for all websites (időnként reseteljük)
             context = await self.browser.new_context()
             
@@ -395,7 +416,7 @@ class SocialMediaScraper:
             await context.route("**/*", route_handler)
             
             # Detect file encoding first
-            detected_encoding = self.detect_encoding(input_file)
+            detected_encoding = self.detect_encoding(file_to_read)
             
             # Read input CSV with proper encoding handling
             encodings_to_try = ['utf-8-sig', 'utf-8', detected_encoding, 'cp1250', 'latin-1', 'cp1252', 'iso-8859-1', 'utf-16']
@@ -403,7 +424,7 @@ class SocialMediaScraper:
             
             for encoding in encodings_to_try:
                 try:
-                    df = pd.read_csv(input_file, encoding=encoding, dtype=str, low_memory=True)
+                    df = pd.read_csv(file_to_read, encoding=encoding, dtype=str, low_memory=True)
                     logger.info(f"Successfully loaded CSV with {encoding} encoding")
                     break
                 except (UnicodeDecodeError, UnicodeError):
@@ -413,7 +434,7 @@ class SocialMediaScraper:
             if df is None:
                 raise ValueError("Could not read CSV file with any of the attempted encodings")
             
-            logger.info(f"Loaded {len(df)} rows from {input_file}")
+            logger.info(f"Loaded {len(df)} rows from {file_to_read}")
             
             # Check if website column exists
             if 'website' not in df.columns:
@@ -437,15 +458,24 @@ class SocialMediaScraper:
                 if col not in df.columns:
                     df[col] = ''
             
-            # Create initial output file with headers
-            df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=',')
-            logger.info(f"Created initial output file: {output_file}")
+            # Create initial output file with headers ONLY if fresh start
+            if start_index == 0:
+                df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=',')
+                logger.info(f"Created initial output file: {output_file}")
+            else:
+                logger.info(f"Resuming - using existing output file: {output_file}")
             
             # Process each row with retry logic
             for index, row in df.iterrows():
+                # Skip already processed rows
+                if index < start_index:
+                    continue
+                
                 website = row['website']
                 if pd.isna(website) or str(website).strip() == '':
                     logger.info(f"Row {index + 1}: No website URL, skipping")
+                    # Save progress even for skipped rows
+                    progress_file.write_text(str(index + 1))
                     continue
 
                 website = str(website).strip()
@@ -455,6 +485,8 @@ class SocialMediaScraper:
                 domain = parsed.netloc.lower()
                 if any(bad in domain for bad in BAD_DOMAIN_PATTERNS):
                     logger.warning(f"Row {index + 1}: Blacklisted domain {domain}, skipping")
+                    # Save progress for blacklisted domains too
+                    progress_file.write_text(str(index + 1))
                     continue
                 # ---------------------------
 
@@ -482,23 +514,30 @@ class SocialMediaScraper:
                 # Retry logic for each website
                 social_data = {}
                 try:
-                    for attempt in range(2):  # 2 attempts
-                        try:
-                            social_data = await asyncio.wait_for(
-                                self.scrape_website(website, page),
-                                timeout=float(self.max_scrape_time)
-                            )
-                            break
-                        except asyncio.TimeoutError as e:
-                            logger.warning(f"Attempt {attempt + 1} TIMEOUT for {website}: {e}")
-                            if attempt == 1:
-                                raise
-                        except Exception as e:
-                            logger.warning(f"Attempt {attempt + 1} failed for {website}: {e}")
-                            if attempt == 1:
-                                raise
+                    social_data = await asyncio.wait_for(
+                        self.scrape_website(website, page),
+                        timeout=float(self.max_scrape_time)
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(f"Hard timeout for {website}, forcing browser restart")
+                    social_data = {
+                        'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
+                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
+                    }
+                    # Force page close and context reset
+                    try:
+                        await page.close()
+                    except Exception:
+                        pass
+                    try:
+                        await context.close()
+                    except Exception:
+                        pass
+                    gc.collect()
+                    context = await self.browser.new_context()
+                    await context.route("**/*", route_handler)
                 except Exception as e:
-                    logger.error(f"All attempts failed for {website}: {e}")
+                    logger.error(f"Failed for {website}: {e}")
                     social_data = {
                         'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
                         'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
@@ -509,7 +548,7 @@ class SocialMediaScraper:
                         await page.close()
                     except Exception:
                         pass
-                
+
                 # Update the dataframe
                 df.at[index, 'scraped_email'] = social_data.get('email', '')
                 df.at[index, 'scraped_email_raw'] = social_data.get('email_raw', '')
@@ -586,8 +625,16 @@ class SocialMediaScraper:
                 
                 logger.info(f"Completed row {index + 1}")
                 
+                # Save progress after each row
+                progress_file.write_text(str(index + 1))
+                
                 # Add a small delay between requests
                 await asyncio.sleep(0.2)
+            
+            # Reset progress file after completion
+            if progress_file.exists():
+                progress_file.unlink()
+                logger.info("Progress file deleted - scraping completed")
             
             logger.info(f"Final results saved to {output_file}")
             
@@ -633,9 +680,11 @@ class SocialMediaScraper:
         row_start_time = time.time()
         HARD_LIMIT = self.max_scrape_time + 10  # pl. max_scrape_time=25 mellett 35 sec / domain
 
-        # Ensure URL has protocol
+        # URL normalizálás - http → https (sok http site redirectel végtelenségig)
         url = url.strip()
-        if not url.startswith(('http://', 'https://')):
+        if url.startswith('http://'):
+            url = 'https://' + url[7:]
+        elif not url.startswith('https://'):
             url = 'https://' + url
 
         # domain + blacklist check itt is (extra védelem)
@@ -687,7 +736,7 @@ class SocialMediaScraper:
                 if not content:
                     continue
 
-                # 🔥 Nagyon nagy oldalak levágása, hogy a regexek ne pörgessék végtelenül a CPU-t
+                # 🔥 Nagyon nagy oldalak levágása, hogy a regexek ne pörgessék végtelenségig a CPU-t
                 MAX_CONTENT_LEN = 150_000  # kb. 500 KB szöveg bőven elég, hogy megtaláljuk a kontaktot és a social linkeket
                 if len(content) > MAX_CONTENT_LEN:
                     logger.info(f"Content for {full_url} too large ({len(content)} chars), truncating to {MAX_CONTENT_LEN}.")
