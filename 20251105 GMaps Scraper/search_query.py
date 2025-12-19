@@ -53,9 +53,11 @@ def scroll_and_extract_links(driver, query):
         print(f"  [WEBDRIVER ERROR] Initial load error for query: {query} -> {msg}")
         traceback.print_exc()
 
-        # 🔥 Ha konkrétan tab crashed / session deleted, dobjuk tovább,
+        # 🔥 Ha konkrétan tab crashed / session deleted / invalid session id, dobjuk tovább,
         # hogy a külső try újraindítsa a drivert
-        if "tab crashed" in msg.lower() or "session deleted" in msg.lower():
+        if ("tab crashed" in msg.lower() 
+            or "session deleted" in msg.lower()
+            or "invalid session id" in msg.lower()):
             raise
 
         # Egyéb WebDriver hibáknál csak üres listával visszatérünk
@@ -128,6 +130,10 @@ def scroll_and_extract_links(driver, query):
     except TimeoutException:
         print(f"  Timeout while scrolling for query: {query}")
         return []
+    except WebDriverException as e:
+        print(f"  [WEBDRIVER ERROR] During scrolling: {e}")
+        traceback.print_exc()
+        raise
     except Exception as e:
         print(f"  Error during scrolling for query {query}: {e}")
         traceback.print_exc()
