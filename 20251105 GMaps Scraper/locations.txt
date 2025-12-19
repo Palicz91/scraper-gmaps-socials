@@ -9,9 +9,9 @@ Sóstó, Székesfehérvár, Hungary
 Fő utca, Székesfehérvár, Hungary
 Városház tér, Székesfehérvár, Hungary
 Kossuth utca, Székesfehérvár, Hungary
-Országalma környéke, Székesfehérvár, Hungary
-Bory-vár környéke, Székesfehérvár, Hungary
-Sóstó Természetvédelmi Terület környéke, Székesfehérvár, Hungary
+Országalma, Székesfehérvár, Hungary
+Bory-vár, Székesfehérvár, Hungary
+Sóstó Természetvédelmi Terület, Székesfehérvár, Hungary
 Belváros, Szombathely, Hungary
 Olad, Szombathely, Hungary
 Derkovits-lakótelep, Szombathely, Hungary
@@ -24,8 +24,8 @@ Király utca, Szombathely, Hungary
 Fő tér, Szombathely, Hungary
 Szent Márton utca, Szombathely, Hungary
 Székesegyház tér, Szombathely, Hungary
-Iseum Savariense környéke, Szombathely, Hungary
-Csónakázó-tó környéke, Szombathely, Hungary
+Iseum Savariense, Szombathely, Hungary
+Csónakázó-tó, Szombathely, Hungary
 Belváros, Érd, Hungary
 Ófalu, Érd, Hungary
 Újfalu, Érd, Hungary
@@ -36,23 +36,23 @@ Tusculanum, Érd, Hungary
 Duna-part, Érd, Hungary
 Budai út, Érd, Hungary
 Fő utca, Érd, Hungary
-Tárnoki út környéke, Érd, Hungary
-Minaret környéke, Érd, Hungary
-Magyar Földrajzi Múzeum környéke, Érd, Hungary
-Fundoklia-völgy környéke, Érd, Hungary
+Tárnoki út, Érd, Hungary
+Minaret, Érd, Hungary
+Magyar Földrajzi Múzeum, Érd, Hungary
+Fundoklia-völgy, Érd, Hungary
 Belváros, Szolnok, Hungary
 Széchenyi városrész, Szolnok, Hungary
 Tallinn városrész, Szolnok, Hungary
 Kertváros, Szolnok, Hungary
 Alcsi-sziget, Szolnok, Hungary
 Szandaszőlős, Szolnok, Hungary
-Vasútállomás környéke, Szolnok, Hungary
+Vasútállomás, Szolnok, Hungary
 Kossuth tér, Szolnok, Hungary
 Szapáry utca, Szolnok, Hungary
 Tisza-parti sétány, Szolnok, Hungary
 Hild János tér, Szolnok, Hungary
-Tiszaligeti Park környéke, Szolnok, Hungary
-Damjanich János Múzeum környéke, Szolnok, Hungary
+Tiszaligeti Park, Szolnok, Hungary
+Damjanich János Múzeum, Szolnok, Hungary
 Újváros, Tatabánya, Hungary
 Óváros, Tatabánya, Hungary
 Bánhida, Tatabánya, Hungary
@@ -63,10 +63,10 @@ Sárberek, Tatabánya, Hungary
 Kertváros, Tatabánya, Hungary
 Fő tér, Tatabánya, Hungary
 Árpád tér, Tatabánya, Hungary
-Szent Borbála tér környéke, Tatabánya, Hungary
-Turul-emlékmű környéke, Tatabánya, Hungary
-Szelim-barlang környéke, Tatabánya, Hungary
-Csónakázó-tó környéke, Tatabánya, Hungary
+Szent Borbála tér, Tatabánya, Hungary
+Turul-emlékmű, Tatabánya, Hungary
+Szelim-barlang, Tatabánya, Hungary
+Csónakázó-tó, Tatabánya, Hungary
 Belváros, Sopron, Hungary
 Várkerület, Sopron, Hungary
 Lővérek, Sopron, Hungary
@@ -78,9 +78,9 @@ Várkerület, Sopron, Hungary
 Fő tér, Sopron, Hungary
 Templom utca, Sopron, Hungary
 Deák tér, Sopron, Hungary
-Tűztorony környéke, Sopron, Hungary
-Előkapu környéke, Sopron, Hungary
-Károly-kilátó környéke, Sopron, Hungary
+Tűztorony, Sopron, Hungary
+Előkapu, Sopron, Hungary
+Károly-kilátó, Sopron, Hungary
 Belváros, Kaposvár, Hungary
 Donner, Kaposvár, Hungary
 Cseri városrész, Kaposvár, Hungary
@@ -92,9 +92,9 @@ Deseda, Kaposvár, Hungary
 Fő utca, Kaposvár, Hungary
 Kossuth tér, Kaposvár, Hungary
 Rippl-Rónai tér, Kaposvár, Hungary
-Színház park környéke, Kaposvár, Hungary
-Csiky Gergely Színház környéke, Kaposvár, Hungary
-Deseda-tó környéke, Kaposvár, Hungary
+Színház park, Kaposvár, Hungary
+Csiky Gergely Színház, Kaposvár, Hungary
+Deseda-tó, Kaposvár, Hungary
 Belváros, Békéscsaba, Hungary
 Jamina, Békéscsaba, Hungary
 Lencsési lakótelep, Békéscsaba, Hungary
@@ -106,7 +106,7 @@ Andrássy út, Békéscsaba, Hungary
 Szent István tér, Békéscsaba, Hungary
 Kossuth tér, Békéscsaba, Hungary
 Munkácsy Mihály Múzeum környéke, Békéscsaba, Hungary
-CsabaPark környéke, Békéscsaba, Hungary
+CsabaPark, Békéscsaba, Hungary
 Belváros, Veszprém, Hungary
 Várnegyed, Veszprém, Hungary
 Egyetemváros, Veszprém, Hungary
@@ -118,9 +118,9 @@ Gyulafirátót, Veszprém, Hungary
 Kossuth utca, Veszprém, Hungary
 Óváros tér, Veszprém, Hungary
 Vár utca, Veszprém, Hungary
-Szent Mihály-székesegyház környéke, Veszprém, Hungary
-Benedek-hegy környéke, Veszprém, Hungary
-Viadukt környéke, Veszprém, Hungary
+Szent Mihály-székesegyház, Veszprém, Hungary
+Benedek-hegy, Veszprém, Hungary
+Viadukt, Veszprém, Hungary
 Veszprémi Állatkert környéke, Veszprém, Hungary
 Belváros, Zalaegerszeg, Hungary
 Landorhegy, Zalaegerszeg, Hungary
@@ -132,6 +132,6 @@ Botfa, Zalaegerszeg, Hungary
 Kossuth utca, Zalaegerszeg, Hungary
 Kossuth tér, Zalaegerszeg, Hungary
 Mindszenty tér, Zalaegerszeg, Hungary
-Dísz tér környéke, Zalaegerszeg, Hungary
-Göcseji Falumúzeum környéke, Zalaegerszeg, Hungary
-Gébárti-tó környéke, Zalaegerszeg, Hungary
+Dísz tér, Zalaegerszeg, Hungary
+Göcseji Falumúzeum, Zalaegerszeg, Hungary
+Gébárti-tó, Zalaegerszeg, Hungary
