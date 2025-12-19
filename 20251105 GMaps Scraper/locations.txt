@@ -1,102 +1,137 @@
-Belváros, Debrecen, Hungary
-Nagyerdő, Debrecen, Hungary
-Újkert, Debrecen, Hungary
-Tócóskert, Debrecen, Hungary
-Tócóvölgy, Debrecen, Hungary
-Vénkert, Debrecen, Hungary
-Libakert, Debrecen, Hungary
-Dobozi-kert, Debrecen, Hungary
-Erzsébet-telep, Debrecen, Hungary
-Lencztelep, Debrecen, Hungary
-Józsa, Debrecen, Hungary
-Piac Street, Debrecen, Hungary
-Kossuth Square, Debrecen, Hungary
-Nagytemplom Area, Debrecen, Hungary
-Nagyerdei Park, Debrecen, Hungary
-Egyetem Square, Debrecen, Hungary
-Déri Square, Debrecen, Hungary
-Aquaticum Area, Debrecen, Hungary
-Belváros, Szeged, Hungary
-Felsőváros, Szeged, Hungary
-Alsóváros, Szeged, Hungary
-Móraváros, Szeged, Hungary
-Rókus, Szeged, Hungary
-Tarján, Szeged, Hungary
-Odessza, Szeged, Hungary
-Újszeged, Szeged, Hungary
-Szentmihály, Szeged, Hungary
-Petőfitelep, Szeged, Hungary
-Kárász Street, Szeged, Hungary
-Dugonics Square, Szeged, Hungary
-Dóm Square, Szeged, Hungary
-Széchenyi Square, Szeged, Hungary
-Tisza Riverbank, Szeged, Hungary
-Anna Bath Area, Szeged, Hungary
-Újszegedi Liget, Szeged, Hungary
-Belváros, Miskolc, Hungary
-Avas, Miskolc, Hungary
-Diósgyőr, Miskolc, Hungary
-Tapolca, Miskolc, Hungary
-Lillafüred, Miskolc, Hungary
-Görömböly, Miskolc, Hungary
-Hejőcsaba, Miskolc, Hungary
-Selyemrét, Miskolc, Hungary
-Csabai Kapu, Miskolc, Hungary
-Széchenyi Street, Miskolc, Hungary
-Avas Lookout Area, Miskolc, Hungary
-Diósgyőr Castle Area, Miskolc, Hungary
-Tapolca Cave Bath Area, Miskolc, Hungary
-Lillafüred Lake Area, Miskolc, Hungary
-Belváros, Pécs, Hungary
-Kertváros, Pécs, Hungary
-Uránváros, Pécs, Hungary
-Mecsekszabolcs, Pécs, Hungary
-Donátus, Pécs, Hungary
-Patacs, Pécs, Hungary
-Rózsadomb, Pécs, Hungary
-Zsolnay Quarter, Pécs, Hungary
-Király Street, Pécs, Hungary
-Széchenyi Square, Pécs, Hungary
-Káptalan Street, Pécs, Hungary
-Zsolnay Cultural Quarter, Pécs, Hungary
-Tettye, Pécs, Hungary
-TV Tower Area, Pécs, Hungary
-Belváros, Győr, Hungary
-Révfalu, Győr, Hungary
-Marcalváros I, Győr, Hungary
-Marcalváros II, Győr, Hungary
-Adyváros, Győr, Hungary
-Sziget, Győr, Hungary
-Nádorváros, Győr, Hungary
-Pinnyéd, Győr, Hungary
-Baross Street, Győr, Hungary
-Széchenyi Square, Győr, Hungary
-Dunakapu Square, Győr, Hungary
-Káptalandomb Area, Győr, Hungary
-Rába Quelle Area, Győr, Hungary
-Belváros, Nyíregyháza, Hungary
-Örökösföld, Nyíregyháza, Hungary
-Jósaváros, Nyíregyháza, Hungary
-Hímes, Nyíregyháza, Hungary
-Sóstóhegy, Nyíregyháza, Hungary
-Sóstógyógyfürdő, Nyíregyháza, Hungary
-Borbánya, Nyíregyháza, Hungary
-Kertváros, Nyíregyháza, Hungary
-Kossuth Square, Nyíregyháza, Hungary
-Dózsa György Street, Nyíregyháza, Hungary
-Sóstó Zoo Area, Nyíregyháza, Hungary
-Sóstó Museum Village Area, Nyíregyháza, Hungary
-Bujtosi Lake Area, Nyíregyháza, Hungary
-Belváros, Kecskemét, Hungary
-Széchenyiváros, Kecskemét, Hungary
-Rákócziváros, Kecskemét, Hungary
-Bethlenváros, Kecskemét, Hungary
-Kadafalva, Kecskemét, Hungary
-Hetényegyháza, Kecskemét, Hungary
-Máriaváros, Kecskemét, Hungary
-Szentkirály, Kecskemét, Hungary
-Kossuth Square, Kecskemét, Hungary
-Főtér, Kecskemét, Hungary
-Szabadság Square, Kecskemét, Hungary
-Katona József Square, Kecskemét, Hungary
-Benkó Zoltán Leisure Center Area, Kecskemét, Hungary
+Belváros, Székesfehérvár, Hungary
+Palotaváros, Székesfehérvár, Hungary
+Felsőváros, Székesfehérvár, Hungary
+Öreghegy, Székesfehérvár, Hungary
+Maroshegy, Székesfehérvár, Hungary
+Víziváros, Székesfehérvár, Hungary
+Ráchegy, Székesfehérvár, Hungary
+Sóstó, Székesfehérvár, Hungary
+Fő utca, Székesfehérvár, Hungary
+Városház tér, Székesfehérvár, Hungary
+Kossuth utca, Székesfehérvár, Hungary
+Országalma környéke, Székesfehérvár, Hungary
+Bory-vár környéke, Székesfehérvár, Hungary
+Sóstó Természetvédelmi Terület környéke, Székesfehérvár, Hungary
+Belváros, Szombathely, Hungary
+Olad, Szombathely, Hungary
+Derkovits-lakótelep, Szombathely, Hungary
+Kámon, Szombathely, Hungary
+Herény, Szombathely, Hungary
+Joskar-Ola, Szombathely, Hungary
+Gyöngyöshermán, Szombathely, Hungary
+Zanat, Szombathely, Hungary
+Király utca, Szombathely, Hungary
+Fő tér, Szombathely, Hungary
+Szent Márton utca, Szombathely, Hungary
+Székesegyház tér, Szombathely, Hungary
+Iseum Savariense környéke, Szombathely, Hungary
+Csónakázó-tó környéke, Szombathely, Hungary
+Belváros, Érd, Hungary
+Ófalu, Érd, Hungary
+Újfalu, Érd, Hungary
+Érdliget, Érd, Hungary
+Parkváros, Érd, Hungary
+Fenyves-Parkváros, Érd, Hungary
+Tusculanum, Érd, Hungary
+Duna-part, Érd, Hungary
+Budai út, Érd, Hungary
+Fő utca, Érd, Hungary
+Tárnoki út környéke, Érd, Hungary
+Minaret környéke, Érd, Hungary
+Magyar Földrajzi Múzeum környéke, Érd, Hungary
+Fundoklia-völgy környéke, Érd, Hungary
+Belváros, Szolnok, Hungary
+Széchenyi városrész, Szolnok, Hungary
+Tallinn városrész, Szolnok, Hungary
+Kertváros, Szolnok, Hungary
+Alcsi-sziget, Szolnok, Hungary
+Szandaszőlős, Szolnok, Hungary
+Vasútállomás környéke, Szolnok, Hungary
+Kossuth tér, Szolnok, Hungary
+Szapáry utca, Szolnok, Hungary
+Tisza-parti sétány, Szolnok, Hungary
+Hild János tér, Szolnok, Hungary
+Tiszaligeti Park környéke, Szolnok, Hungary
+Damjanich János Múzeum környéke, Szolnok, Hungary
+Újváros, Tatabánya, Hungary
+Óváros, Tatabánya, Hungary
+Bánhida, Tatabánya, Hungary
+Alsógalla, Tatabánya, Hungary
+Felsőgalla, Tatabánya, Hungary
+Dózsakert, Tatabánya, Hungary
+Sárberek, Tatabánya, Hungary
+Kertváros, Tatabánya, Hungary
+Fő tér, Tatabánya, Hungary
+Árpád tér, Tatabánya, Hungary
+Szent Borbála tér környéke, Tatabánya, Hungary
+Turul-emlékmű környéke, Tatabánya, Hungary
+Szelim-barlang környéke, Tatabánya, Hungary
+Csónakázó-tó környéke, Tatabánya, Hungary
+Belváros, Sopron, Hungary
+Várkerület, Sopron, Hungary
+Lővérek, Sopron, Hungary
+Jereván lakótelep, Sopron, Hungary
+Kurucdomb, Sopron, Hungary
+Balf, Sopron, Hungary
+Tómalom, Sopron, Hungary
+Várkerület, Sopron, Hungary
+Fő tér, Sopron, Hungary
+Templom utca, Sopron, Hungary
+Deák tér, Sopron, Hungary
+Tűztorony környéke, Sopron, Hungary
+Előkapu környéke, Sopron, Hungary
+Károly-kilátó környéke, Sopron, Hungary
+Belváros, Kaposvár, Hungary
+Donner, Kaposvár, Hungary
+Cseri városrész, Kaposvár, Hungary
+Rómahegy, Kaposvár, Hungary
+Kecelhegy, Kaposvár, Hungary
+Kaposfüred, Kaposvár, Hungary
+Toponár, Kaposvár, Hungary
+Deseda, Kaposvár, Hungary
+Fő utca, Kaposvár, Hungary
+Kossuth tér, Kaposvár, Hungary
+Rippl-Rónai tér, Kaposvár, Hungary
+Színház park környéke, Kaposvár, Hungary
+Csiky Gergely Színház környéke, Kaposvár, Hungary
+Deseda-tó környéke, Kaposvár, Hungary
+Belváros, Békéscsaba, Hungary
+Jamina, Békéscsaba, Hungary
+Lencsési lakótelep, Békéscsaba, Hungary
+Kazinczy-lakótelep, Békéscsaba, Hungary
+Mezőmegyer, Békéscsaba, Hungary
+Gerla, Békéscsaba, Hungary
+Fényes, Békéscsaba, Hungary
+Andrássy út, Békéscsaba, Hungary
+Szent István tér, Békéscsaba, Hungary
+Kossuth tér, Békéscsaba, Hungary
+Munkácsy Mihály Múzeum környéke, Békéscsaba, Hungary
+CsabaPark környéke, Békéscsaba, Hungary
+Belváros, Veszprém, Hungary
+Várnegyed, Veszprém, Hungary
+Egyetemváros, Veszprém, Hungary
+Cholnokyváros, Veszprém, Hungary
+Dózsaváros, Veszprém, Hungary
+Jutasi úti lakótelep, Veszprém, Hungary
+Kádárta, Veszprém, Hungary
+Gyulafirátót, Veszprém, Hungary
+Kossuth utca, Veszprém, Hungary
+Óváros tér, Veszprém, Hungary
+Vár utca, Veszprém, Hungary
+Szent Mihály-székesegyház környéke, Veszprém, Hungary
+Benedek-hegy környéke, Veszprém, Hungary
+Viadukt környéke, Veszprém, Hungary
+Veszprémi Állatkert környéke, Veszprém, Hungary
+Belváros, Zalaegerszeg, Hungary
+Landorhegy, Zalaegerszeg, Hungary
+Ola, Zalaegerszeg, Hungary
+Kertváros, Zalaegerszeg, Hungary
+Andráshida, Zalaegerszeg, Hungary
+Pózva, Zalaegerszeg, Hungary
+Botfa, Zalaegerszeg, Hungary
+Kossuth utca, Zalaegerszeg, Hungary
+Kossuth tér, Zalaegerszeg, Hungary
+Mindszenty tér, Zalaegerszeg, Hungary
+Dísz tér környéke, Zalaegerszeg, Hungary
+Göcseji Falumúzeum környéke, Zalaegerszeg, Hungary
+Gébárti-tó környéke, Zalaegerszeg, Hungary
