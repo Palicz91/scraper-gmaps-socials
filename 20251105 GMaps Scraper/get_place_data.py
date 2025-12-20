@@ -33,9 +33,13 @@ def create_driver():
     options.add_argument("--disable-software-rasterizer")
     options.add_argument("--disable-features=VizDisplayCompositor")
 
-    # saját profil: segíti a stabil cookie-működést
-    profile_dir = os.path.expanduser('~/selenium_profile')
-    options.add_argument(f"--user-data-dir={profile_dir}")
+    # ✅ FIX: Clean profile minden indításnál (memória-szivárgás megelőzése)
+    options.add_argument("--incognito")
+    
+    # ✅ NEW: Memória optimalizálás
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-plugins")
+    options.add_argument("--single-process")  # Kevesebb memória
 
     # user-agent a blokkolás elkerülésére
     options.add_argument(
@@ -94,12 +98,8 @@ def extract_coordinates_from_url(url):
     return None, None
 
 
-
-
-
-
 def get_place_data(driver, url, max_retries=3):
-    """Extract all place data from Google Maps page using Scrapy Selector."""
+    """Extract all place data from Google Maps page - with crash detection."""
     print(f"Processing: {url}")
     logging.info(f"Processing: {url}")
     
@@ -107,15 +107,10 @@ def get_place_data(driver, url, max_retries=3):
         try:
             driver.get(url)
             
-            # várjunk rá, hogy a Maps fő tartalma (pl. üzlet neve <h1>) megjelenjen
-            try:
-                WebDriverWait(driver, 15).until(
-                    lambda d: "maps" in d.current_url and len(d.find_elements(By.CSS_SELECTOR, "h1")) > 0
-                )
-            except Exception:
-                print("  ✗ Google Maps content did not render properly, retrying...")
-                logging.error(f"Google Maps content did not render properly for {url}")
-                return None
+            # WebDriverWait BELÜL marad a try-ban, nem return None!
+            WebDriverWait(driver, 15).until(
+                lambda d: "maps" in d.current_url and len(d.find_elements(By.CSS_SELECTOR, "h1")) > 0
+            )
             
             time.sleep(3)  # Wait for page to load
             
@@ -171,17 +166,27 @@ def get_place_data(driver, url, max_retries=3):
             return item
             
         except Exception as e:
-            print(f"  ✗ Error processing {url} (attempt {attempt + 1}/{max_retries}): {e}")
-            logging.error(f"Error processing {url}: {e}")
+            error_msg = str(e).lower()
+            
+            # 🔴 Browser crash detection
+            if "crashed" in error_msg or "session" in error_msg or "invalid session" in error_msg:
+                print(f"  💀 Browser crashed! Signaling restart...")
+                logging.error(f"Browser crashed on {url}: {e}")
+                return "BROWSER_CRASHED"  # Signal to main() for restart
+            
+            # Regular error -> retry
+            print(f"  ✗ Attempt {attempt + 1}/{max_retries} failed: {e}")
+            logging.error(f"Error processing {url} (attempt {attempt + 1}): {e}")
+            
             if attempt < max_retries - 1:
                 print(f"  Retrying in 2 seconds...")
                 time.sleep(2)
-            else:
-                print(f"  Failed to process {url} after {max_retries} attempts")
-                return None
-        finally:
-            # korábban itt minden körben töröltük a cookie-kat, ez lassú és általában felesleges
-            pass
+    
+    # Csak ha mind a 3 próba sikertelen
+    print(f"  Failed to process {url} after {max_retries} attempts")
+    logging.error(f"All {max_retries} attempts failed for {url}")
+    return None
+
 
 def save_to_csv(data_list, filename="places_data.csv"):
     """Save place data to CSV file."""
@@ -271,18 +276,45 @@ def main():
     for i, link in enumerate(links[start_index:], start=start_index + 1):
         print(f"\n--- Processing link {i}/{len(links)} ---")
 
-        # Restart browser every 100 links to clear memory
-        if i % 100 == 0:
+        # ✅ UPDATED: Gyakoribb preventív restart (100 → 50)
+        if i % 50 == 0:
             try:
                 driver.quit()
             except:
                 pass
+            time.sleep(1)  # Adj időt a rendszernek
             driver = create_driver()
-            print("🔁 Restarted browser to clear memory")
+            print("🔁 Preventive browser restart")
 
         place_data = get_place_data(driver, link)
         
-        if place_data:
+        # ✅ UPDATED: Dupla crash kezelés
+        if place_data == "BROWSER_CRASHED":
+            try:
+                driver.quit()
+            except:
+                pass
+            time.sleep(2)  # Adj időt a rendszernek
+            driver = create_driver()
+            print("🔄 Browser restarted after crash")
+            logging.info("Browser restarted after crash")
+            
+            # Retry this same link with fresh browser
+            place_data = get_place_data(driver, link)
+            
+            # Ha még mindig crash → skip this link, ne akadjon be
+            if place_data == "BROWSER_CRASHED":
+                print(f"  ⚠️  Double crash on {link}, skipping to next link")
+                logging.error(f"Double crash on {link}, skipping")
+                try:
+                    driver.quit()
+                except:
+                    pass
+                time.sleep(2)
+                driver = create_driver()
+                continue  # Következő linkre
+        
+        if place_data and place_data != "BROWSER_CRASHED":
             save_single_record_to_csv(place_data, "places_data.csv")
             processed_count += 1
             print(f"Progress: {processed_count} places processed successfully")
