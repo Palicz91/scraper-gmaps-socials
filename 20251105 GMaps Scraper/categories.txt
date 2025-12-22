@@ -1,28 +1,41 @@
 cafe
-restaurant
-bar
 coffee shop
+restaurant
 bistro
-wine bar
-fine dining
-street food
-steakhouse
-seafood
-Foodcourt
-halas étterem
-ételudvar
-borbár
-bisztró
-kávézó
-bár
-étterem
-csárda
-cukrászda
-pékség
+bar
 pub
-kocsma
-söröző
-borozó
-ételbár
-gyorsétterem
-fagylaltozó
+wine bar
+cocktail bar
+brunch
+italian restaurant
+pizza restaurant
+indian restaurant
+chinese restaurant
+thai restaurant
+japanese restaurant
+sushi restaurant
+korean restaurant
+vietnamese restaurant
+mexican restaurant
+spanish restaurant
+tapas bar
+greek restaurant
+turkish restaurant
+lebanese restaurant
+middle eastern restaurant
+french restaurant
+american restaurant
+burger restaurant
+steakhouse
+seafood restaurant
+fish and chips
+gastropub
+brasserie
+tea room
+bakery
+patisserie
+dessert shop
+sandwich shop
+deli
+food hall
+
