@@ -1,137 +1,101 @@
-Belváros, Székesfehérvár, Hungary
-Palotaváros, Székesfehérvár, Hungary
-Felsőváros, Székesfehérvár, Hungary
-Öreghegy, Székesfehérvár, Hungary
-Maroshegy, Székesfehérvár, Hungary
-Víziváros, Székesfehérvár, Hungary
-Ráchegy, Székesfehérvár, Hungary
-Sóstó, Székesfehérvár, Hungary
-Fő utca, Székesfehérvár, Hungary
-Városház tér, Székesfehérvár, Hungary
-Kossuth utca, Székesfehérvár, Hungary
-Országalma, Székesfehérvár, Hungary
-Bory-vár, Székesfehérvár, Hungary
-Sóstó Természetvédelmi Terület, Székesfehérvár, Hungary
-Belváros, Szombathely, Hungary
-Olad, Szombathely, Hungary
-Derkovits-lakótelep, Szombathely, Hungary
-Kámon, Szombathely, Hungary
-Herény, Szombathely, Hungary
-Joskar-Ola, Szombathely, Hungary
-Gyöngyöshermán, Szombathely, Hungary
-Zanat, Szombathely, Hungary
-Király utca, Szombathely, Hungary
-Fő tér, Szombathely, Hungary
-Szent Márton utca, Szombathely, Hungary
-Székesegyház tér, Szombathely, Hungary
-Iseum Savariense, Szombathely, Hungary
-Csónakázó-tó, Szombathely, Hungary
-Belváros, Érd, Hungary
-Ófalu, Érd, Hungary
-Újfalu, Érd, Hungary
-Érdliget, Érd, Hungary
-Parkváros, Érd, Hungary
-Fenyves-Parkváros, Érd, Hungary
-Tusculanum, Érd, Hungary
-Duna-part, Érd, Hungary
-Budai út, Érd, Hungary
-Fő utca, Érd, Hungary
-Tárnoki út, Érd, Hungary
-Minaret, Érd, Hungary
-Magyar Földrajzi Múzeum, Érd, Hungary
-Fundoklia-völgy, Érd, Hungary
-Belváros, Szolnok, Hungary
-Széchenyi városrész, Szolnok, Hungary
-Tallinn városrész, Szolnok, Hungary
-Kertváros, Szolnok, Hungary
-Alcsi-sziget, Szolnok, Hungary
-Szandaszőlős, Szolnok, Hungary
-Vasútállomás, Szolnok, Hungary
-Kossuth tér, Szolnok, Hungary
-Szapáry utca, Szolnok, Hungary
-Tisza-parti sétány, Szolnok, Hungary
-Hild János tér, Szolnok, Hungary
-Tiszaligeti Park, Szolnok, Hungary
-Damjanich János Múzeum, Szolnok, Hungary
-Újváros, Tatabánya, Hungary
-Óváros, Tatabánya, Hungary
-Bánhida, Tatabánya, Hungary
-Alsógalla, Tatabánya, Hungary
-Felsőgalla, Tatabánya, Hungary
-Dózsakert, Tatabánya, Hungary
-Sárberek, Tatabánya, Hungary
-Kertváros, Tatabánya, Hungary
-Fő tér, Tatabánya, Hungary
-Árpád tér, Tatabánya, Hungary
-Szent Borbála tér, Tatabánya, Hungary
-Turul-emlékmű, Tatabánya, Hungary
-Szelim-barlang, Tatabánya, Hungary
-Csónakázó-tó, Tatabánya, Hungary
-Belváros, Sopron, Hungary
-Várkerület, Sopron, Hungary
-Lővérek, Sopron, Hungary
-Jereván lakótelep, Sopron, Hungary
-Kurucdomb, Sopron, Hungary
-Balf, Sopron, Hungary
-Tómalom, Sopron, Hungary
-Várkerület, Sopron, Hungary
-Fő tér, Sopron, Hungary
-Templom utca, Sopron, Hungary
-Deák tér, Sopron, Hungary
-Tűztorony, Sopron, Hungary
-Előkapu, Sopron, Hungary
-Károly-kilátó, Sopron, Hungary
-Belváros, Kaposvár, Hungary
-Donner, Kaposvár, Hungary
-Cseri városrész, Kaposvár, Hungary
-Rómahegy, Kaposvár, Hungary
-Kecelhegy, Kaposvár, Hungary
-Kaposfüred, Kaposvár, Hungary
-Toponár, Kaposvár, Hungary
-Deseda, Kaposvár, Hungary
-Fő utca, Kaposvár, Hungary
-Kossuth tér, Kaposvár, Hungary
-Rippl-Rónai tér, Kaposvár, Hungary
-Színház park, Kaposvár, Hungary
-Csiky Gergely Színház, Kaposvár, Hungary
-Deseda-tó, Kaposvár, Hungary
-Belváros, Békéscsaba, Hungary
-Jamina, Békéscsaba, Hungary
-Lencsési lakótelep, Békéscsaba, Hungary
-Kazinczy-lakótelep, Békéscsaba, Hungary
-Mezőmegyer, Békéscsaba, Hungary
-Gerla, Békéscsaba, Hungary
-Fényes, Békéscsaba, Hungary
-Andrássy út, Békéscsaba, Hungary
-Szent István tér, Békéscsaba, Hungary
-Kossuth tér, Békéscsaba, Hungary
-Munkácsy Mihály Múzeum környéke, Békéscsaba, Hungary
-CsabaPark, Békéscsaba, Hungary
-Belváros, Veszprém, Hungary
-Várnegyed, Veszprém, Hungary
-Egyetemváros, Veszprém, Hungary
-Cholnokyváros, Veszprém, Hungary
-Dózsaváros, Veszprém, Hungary
-Jutasi úti lakótelep, Veszprém, Hungary
-Kádárta, Veszprém, Hungary
-Gyulafirátót, Veszprém, Hungary
-Kossuth utca, Veszprém, Hungary
-Óváros tér, Veszprém, Hungary
-Vár utca, Veszprém, Hungary
-Szent Mihály-székesegyház, Veszprém, Hungary
-Benedek-hegy, Veszprém, Hungary
-Viadukt, Veszprém, Hungary
-Veszprémi Állatkert környéke, Veszprém, Hungary
-Belváros, Zalaegerszeg, Hungary
-Landorhegy, Zalaegerszeg, Hungary
-Ola, Zalaegerszeg, Hungary
-Kertváros, Zalaegerszeg, Hungary
-Andráshida, Zalaegerszeg, Hungary
-Pózva, Zalaegerszeg, Hungary
-Botfa, Zalaegerszeg, Hungary
-Kossuth utca, Zalaegerszeg, Hungary
-Kossuth tér, Zalaegerszeg, Hungary
-Mindszenty tér, Zalaegerszeg, Hungary
-Dísz tér, Zalaegerszeg, Hungary
-Göcseji Falumúzeum, Zalaegerszeg, Hungary
-Gébárti-tó, Zalaegerszeg, Hungary
+Soho, London, UK
+Covent Garden, London, UK
+Leicester Square, London, UK
+Piccadilly Circus, London, UK
+Chinatown, London, UK
+Seven Dials, London, UK
+Carnaby Street, London, UK
+Oxford Street, London, UK
+Regent Street, London, UK
+Bond Street, London, UK
+Mayfair, London, UK
+Marylebone, London, UK
+Fitzrovia, London, UK
+Bloomsbury, London, UK
+Holborn, London, UK
+Trafalgar Square, London, UK
+Charing Cross, London, UK
+Embankment, London, UK
+Westminster, London, UK
+Victoria, London, UK
+Pimlico, London, UK
+Belgravia, London, UK
+Knightsbridge, London, UK
+South Kensington, London, UK
+Kensington, London, UK
+Chelsea, London, UK
+Sloane Square, London, UK
+King's Road, London, UK
+Notting Hill, London, UK
+Portobello Road, London, UK
+Bayswater, London, UK
+Paddington, London, UK
+Little Venice, London, UK
+St John's Wood, London, UK
+Primrose Hill, London, UK
+Camden Town, London, UK
+Camden Market, London, UK
+King's Cross, London, UK
+St Pancras, London, UK
+Islington, London, UK
+Angel, London, UK
+Clerkenwell, London, UK
+Farringdon, London, UK
+Exmouth Market, London, UK
+Barbican, London, UK
+Old Street, London, UK
+Shoreditch, London, UK
+Hoxton, London, UK
+Brick Lane, London, UK
+Spitalfields, London, UK
+Liverpool Street, London, UK
+Aldgate, London, UK
+Whitechapel, London, UK
+Bethnal Green, London, UK
+Columbia Road, London, UK
+Broadway Market, London, UK
+Hackney, London, UK
+Dalston, London, UK
+London Fields, London, UK
+Victoria Park, London, UK
+Hackney Wick, London, UK
+Mile End, London, UK
+Bow, London, UK
+Stratford, London, UK
+Canary Wharf, London, UK
+Greenwich, London, UK
+Cutty Sark, London, UK
+Deptford, London, UK
+St Paul's, London, UK
+Bank, London, UK
+Monument, London, UK
+Tower Hill, London, UK
+Tower Bridge, London, UK
+Leadenhall Market, London, UK
+Fenchurch Street, London, UK
+Fleet Street, London, UK
+South Bank, London, UK
+Southwark, London, UK
+Borough, London, UK
+Borough Market, London, UK
+London Bridge, London, UK
+Bermondsey, London, UK
+Waterloo, London, UK
+Lambeth, London, UK
+Vauxhall, London, UK
+Battersea, London, UK
+Clapham, London, UK
+Brixton, London, UK
+Peckham, London, UK
+Dulwich, London, UK
+Hampstead, London, UK
+Highgate, London, UK
+Stoke Newington, London, UK
+Walthamstow, London, UK
+Hammersmith, London, UK
+Fulham, London, UK
+Shepherd's Bush, London, UK
+Chiswick, London, UK
+Richmond, London, UK
+Putney, London, UK
+Wimbledon, London, UK
