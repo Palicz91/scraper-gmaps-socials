@@ -28,6 +28,47 @@ def create_driver():
     return driver
 
 
+def handle_consent(driver):
+    """Handle Google consent page if it appears."""
+    try:
+        time.sleep(2)
+        if "consent.google" in driver.current_url:
+            print("  [INFO] Consent page detected, trying to accept...")
+            # Try different button selectors
+            buttons = [
+                "button[aria-label*='Accept']",
+                "button[aria-label*='Hyväksy']",  # Finnish
+                "button[aria-label*='Akzeptieren']",  # German
+                "form[action*='consent'] button",
+                "button[jsname='higCR']",
+                "button[jsname='b3VHJd']"
+            ]
+            for selector in buttons:
+                try:
+                    btn = driver.find_element(By.CSS_SELECTOR, selector)
+                    btn.click()
+                    print(f"  [INFO] Clicked consent button: {selector}")
+                    time.sleep(2)
+                    return True
+                except:
+                    continue
+            # Fallback: try all buttons with "Accept" text
+            try:
+                all_buttons = driver.find_elements(By.TAG_NAME, "button")
+                for btn in all_buttons:
+                    if btn.is_displayed():
+                        btn.click()
+                        time.sleep(2)
+                        if "consent.google" not in driver.current_url:
+                            print("  [INFO] Consent handled via button click")
+                            return True
+            except:
+                pass
+    except Exception as e:
+        print(f"  [WARN] Consent handling error: {e}")
+    return False
+
+
 def get_queries():
     with open('google_maps_queries.txt', 'r') as file:
         queries = [line.strip() for line in file.readlines() if line.strip()]
@@ -45,6 +86,7 @@ def scroll_and_extract_links(driver, query):
     # Oldal betöltése + első várakozás is try-ban
     try:
         driver.get(f"https://www.google.com/maps/search/{query_encoded}?hl=en")
+        handle_consent(driver)  # <-- ÚJ: Handle consent if needed
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='feed']"))
         )
