@@ -10,18 +10,21 @@ from selenium.webdriver.chrome.options import Options
 
 def create_driver():
     options = Options()
-    # régi: --headless=new → ezt cseréljük stabilabb headless módra
-    options.add_argument("--headless=chrome")
-    options.add_argument("--window-size=1280,1000")
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    # WebGL / rasterizer tiltás: Mapsnél csökkenti a tab crash-t
     options.add_argument("--disable-webgl")
     options.add_argument("--disable-software-rasterizer")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--disable-features=VizDisplayCompositor")
+    options.add_argument("--lang=en-US")
+    # User agent - ez a kulcs!
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36")
+    
     driver = webdriver.Chrome(options=options)
+    driver.set_page_load_timeout(30)
     return driver
 
 
@@ -42,7 +45,7 @@ def scroll_and_extract_links(driver, query):
     # Oldal betöltése + első várakozás is try-ban
     try:
         driver.get(f"https://www.google.com/maps/search/{query_encoded}?hl=en")
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='feed']"))
         )
     except TimeoutException:
