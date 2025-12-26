@@ -98,6 +98,47 @@ def extract_coordinates_from_url(url):
     return None, None
 
 
+def accept_google_consent(driver, timeout=3):
+    """Handle Google's GDPR consent popup if it appears."""
+    try:
+        # ✅ OPTIMALIZÁLÁS: Gyors pre-check - ha nincs consent page, azonnal return
+        if "consent.google" not in driver.current_url and "Before you continue" not in driver.page_source:
+            return False  # Nincs consent, skip
+        
+        print("  🔍 Consent popup detected, attempting to handle...")
+        
+        # Különböző nyelvű "Accept" gombok
+        consent_buttons = [
+            "//button[contains(., 'Accept all')]",
+            "//button[contains(., 'Reject all')]",  # Ez is továbbenged
+            "//button[contains(., 'Accept')]",
+            "//button[contains(., 'I agree')]",
+            "//button[contains(., 'Elfogadom')]",  # Magyar
+            "//button[contains(., 'Összes elfogadása')]",
+            "//button[@aria-label='Accept all']",
+            "//form//button[1]",  # Fallback: első gomb a formban
+        ]
+        
+        for xpath in consent_buttons:
+            try:
+                button = WebDriverWait(driver, timeout).until(
+                    EC.element_to_be_clickable((By.XPATH, xpath))
+                )
+                button.click()
+                print("  ✓ Consent popup accepted")
+                logging.info("Google consent popup accepted")
+                time.sleep(2)  # Várj a redirect-re
+                return True
+            except:
+                continue
+        
+        print("  ⚠️  Consent popup detected but no button found")
+        return False
+    except Exception as e:
+        logging.debug(f"No consent popup or failed to handle: {e}")
+        return False
+
+
 def get_place_data(driver, url, max_retries=3):
     """Extract all place data from Google Maps page - with crash detection."""
     print(f"Processing: {url}")
@@ -107,9 +148,14 @@ def get_place_data(driver, url, max_retries=3):
         try:
             driver.get(url)
             
-            # WebDriverWait BELÜL marad a try-ban, nem return None!
+            # 🔥 ÚJ: Consent popup kezelése ELŐSZÖR
+            accept_google_consent(driver, timeout=3)
+            
+            # 🔥 JAVÍTOTT wait condition - kizárja a consent page-et
             WebDriverWait(driver, 15).until(
-                lambda d: "maps" in d.current_url and len(d.find_elements(By.CSS_SELECTOR, "h1")) > 0
+                lambda d: "maps" in d.current_url 
+                    and len(d.find_elements(By.CSS_SELECTOR, "h1")) > 0
+                    and "Before you continue" not in d.page_source
             )
             
             time.sleep(3)  # Wait for page to load
