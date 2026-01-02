@@ -300,8 +300,9 @@ def process(in_path: Path, out_path: Path):
             # scraped_email validáció
             if scraped_email and not is_valid_email(scraped_email):
                 scraped_email = ""
-            if scraped_email:
-                row["scraped_email"] = scraped_email
+            
+            # MINDIG frissítsd a row-t
+            row["scraped_email"] = scraped_email
 
             # raw további emailjei
             if scraped_email_raw:
