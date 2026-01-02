@@ -2,6 +2,7 @@ import csv
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 PLACEHOLDER_DOMAINS = {
     "domain.com",
@@ -13,7 +14,10 @@ PLACEHOLDER_DOMAINS = {
     "company.com",
     "business.com",
     "website.com",
-    "mail.com",  # ez gyakran spam trap
+    "mail.com",
+    "mysite.com",
+    "mystore.com",
+    "godaddy.com",
 }
 
 EMAIL_RE = re.compile(
@@ -146,25 +150,81 @@ def extract_country(address: str, plus_code: str) -> str:
 
     return ""
 
+def clean_email_before_validation(email: str) -> str:
+    """Email előtisztítás validáció előtt."""
+    if not email:
+        return ""
+    
+    # URL decode FIRST, then strip
+    email = unquote(email).strip()
+    
+    # Query string levágás
+    if "?" in email:
+        email = email.split("?")[0]
+    
+    # Trailing pont/vessző/pontosvessző
+    email = email.rstrip(".,;")
+    
+    return email
+
 def is_valid_email(email: str) -> bool:
     if not email:
         return False
-    email = email.strip()
-
-    # képfájl vagy útvonal jellegű cuccot dobjuk
+    
+    # Use the cleaning function for consistency
+    email = clean_email_before_validation(email)
+    
+    # 3. Üres vagy túl rövid
+    if len(email) < 5:
+        return False
+    
     lower = email.lower()
+    
+    # 4. Képfájl pattern - BŐVÍTETT
+    # @2x, @3x retina képek kiszűrése
+    if re.search(r"@\d+x", lower):
+        return False
+    
+    # 5. Fájlkiterjesztés check - bárhol az emailben
+    image_exts = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico")
+    if any(ext in lower for ext in image_exts):
+        return False
+    
+    # 6. Útvonal jellegű
     if "/" in lower:
         return False
-    if lower.endswith((".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico")):
+    
+    # 7. Nincs @ vagy több @ van
+    if lower.count("@") != 1:
         return False
-
-    if not EMAIL_RE.match(email):
+    
+    local, domain = lower.split("@")
+    
+    # 8. Local part validáció
+    if not local or not re.match(r"^[a-z0-9._%+-]+$", local):
         return False
-
-    domain = email.split("@")[-1].lower()
+    
+    # 9. Domain validáció
+    if not domain:
+        return False
+    
+    # 10. Dupla pont a domainben
+    if ".." in domain:
+        return False
+    
+    # 11. Domain formátum - legalább egy pont, csak alnum és kötőjel
+    if not re.match(r"^[a-z0-9.-]+\.[a-z]{2,}$", domain):
+        return False
+    
+    # 12. Placeholder domain check
     if domain in PLACEHOLDER_DOMAINS:
         return False
+    
     if domain.endswith(".local"):
+        return False
+    
+    # 13. Túl rövid domain (valószínűleg garbage)
+    if len(domain) < 4:
         return False
 
     return True
@@ -172,18 +232,25 @@ def is_valid_email(email: str) -> bool:
 def split_emails(raw: str):
     if not raw:
         return []
-    # Egységesítsük: ; és whitespace helyett vessző
+    
+    # Egységesítés
     tmp = re.sub(r"[;\s]+", ",", raw)
     candidates = [p.strip() for p in tmp.split(",") if p.strip()]
 
     seen = set()
     result = []
-    for c in candidates:
-        if c.lower() not in seen and is_valid_email(c):
-            seen.add(c.lower())
-            result.append(c)
     
-    # Sort by business email priority
+    for c in candidates:
+        # ✅ ELŐTISZTÍTÁS
+        cleaned = clean_email_before_validation(c)
+        
+        if not cleaned:
+            continue
+            
+        if cleaned.lower() not in seen and is_valid_email(cleaned):
+            seen.add(cleaned.lower())
+            result.append(cleaned)  # ✅ TISZTÍTOTT VERZIÓ
+    
     result.sort(key=email_priority, reverse=True)
     return result
 
@@ -218,14 +285,17 @@ def process(in_path: Path, out_path: Path):
             plus_code = row.get("plus_code", "")
             row["country"] = extract_country(address, plus_code)
 
-            # 4–5) email logika
-            scraped_email = (row.get("scraped_email") or "").strip()
+            # 4–5) email logika - ✅ TISZTÍTÁSSAL
+            scraped_email = clean_email_before_validation(row.get("scraped_email") or "")
             scraped_email_raw = (row.get("scraped_email_raw") or "").strip()
 
             # ha teljes egyezés, raw törlése
-            if scraped_email and scraped_email_raw and scraped_email == scraped_email_raw:
-                scraped_email_raw = ""
-                row["scraped_email_raw"] = ""
+            if scraped_email and scraped_email_raw:
+                # Compare cleaned versions
+                cleaned_raw = clean_email_before_validation(scraped_email_raw)
+                if scraped_email == cleaned_raw:
+                    scraped_email_raw = ""
+                    row["scraped_email_raw"] = ""
 
             # scraped_email validáció
             if scraped_email and not is_valid_email(scraped_email):
