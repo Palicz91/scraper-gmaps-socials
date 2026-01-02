@@ -200,30 +200,41 @@ def is_valid_email(email: str) -> bool:
     
     local, domain = lower.split("@")
     
-    # 8. Local part validáció
+    # 8. Honeypot/spam trap patterns
+    if "sentry" in local:
+        return False
+    
+    # 9. Értelmetlen random stringek kiszűrése (pl. "wsentryer", "xyzabc")
+    # Ha a local part 6+ karakter és nincs benne magánhangzó → garbage
+    if len(local) >= 6:
+        vowels = set("aeiou")
+        if not any(c in vowels for c in local.replace(".", "")):
+            return False
+    
+    # 10. Local part validáció
     if not local or not re.match(r"^[a-z0-9._%+-]+$", local):
         return False
     
-    # 9. Domain validáció
+    # 11. Domain validáció
     if not domain:
         return False
     
-    # 10. Dupla pont a domainben
+    # 12. Dupla pont a domainben
     if ".." in domain:
         return False
     
-    # 11. Domain formátum - legalább egy pont, csak alnum és kötőjel
+    # 13. Domain formátum - legalább egy pont, csak alnum és kötőjel
     if not re.match(r"^[a-z0-9.-]+\.[a-z]{2,}$", domain):
         return False
     
-    # 12. Placeholder domain check
+    # 14. Placeholder domain check
     if domain in PLACEHOLDER_DOMAINS:
         return False
     
     if domain.endswith(".local"):
         return False
     
-    # 13. Túl rövid domain (valószínűleg garbage)
+    # 15. Túl rövid domain (valószínűleg garbage)
     if len(domain) < 4:
         return False
 
