@@ -1,101 +1,59 @@
-Soho, London, UK
-Covent Garden, London, UK
-Leicester Square, London, UK
-Piccadilly Circus, London, UK
-Chinatown, London, UK
-Seven Dials, London, UK
-Carnaby Street, London, UK
-Oxford Street, London, UK
-Regent Street, London, UK
-Bond Street, London, UK
-Mayfair, London, UK
-Marylebone, London, UK
-Fitzrovia, London, UK
-Bloomsbury, London, UK
-Holborn, London, UK
-Trafalgar Square, London, UK
-Charing Cross, London, UK
-Embankment, London, UK
-Westminster, London, UK
-Victoria, London, UK
-Pimlico, London, UK
-Belgravia, London, UK
-Knightsbridge, London, UK
-South Kensington, London, UK
-Kensington, London, UK
-Chelsea, London, UK
-Sloane Square, London, UK
-King's Road, London, UK
-Notting Hill, London, UK
-Portobello Road, London, UK
-Bayswater, London, UK
-Paddington, London, UK
-Little Venice, London, UK
-St John's Wood, London, UK
-Primrose Hill, London, UK
-Camden Town, London, UK
-Camden Market, London, UK
-King's Cross, London, UK
-St Pancras, London, UK
-Islington, London, UK
-Angel, London, UK
-Clerkenwell, London, UK
-Farringdon, London, UK
-Exmouth Market, London, UK
-Barbican, London, UK
-Old Street, London, UK
-Shoreditch, London, UK
-Hoxton, London, UK
-Brick Lane, London, UK
-Spitalfields, London, UK
-Liverpool Street, London, UK
-Aldgate, London, UK
-Whitechapel, London, UK
-Bethnal Green, London, UK
-Columbia Road, London, UK
-Broadway Market, London, UK
-Hackney, London, UK
-Dalston, London, UK
-London Fields, London, UK
-Victoria Park, London, UK
-Hackney Wick, London, UK
-Mile End, London, UK
-Bow, London, UK
-Stratford, London, UK
-Canary Wharf, London, UK
-Greenwich, London, UK
-Cutty Sark, London, UK
-Deptford, London, UK
-St Paul's, London, UK
-Bank, London, UK
-Monument, London, UK
-Tower Hill, London, UK
-Tower Bridge, London, UK
-Leadenhall Market, London, UK
-Fenchurch Street, London, UK
-Fleet Street, London, UK
-South Bank, London, UK
-Southwark, London, UK
-Borough, London, UK
-Borough Market, London, UK
-London Bridge, London, UK
-Bermondsey, London, UK
-Waterloo, London, UK
-Lambeth, London, UK
-Vauxhall, London, UK
-Battersea, London, UK
-Clapham, London, UK
-Brixton, London, UK
-Peckham, London, UK
-Dulwich, London, UK
-Hampstead, London, UK
-Highgate, London, UK
-Stoke Newington, London, UK
-Walthamstow, London, UK
-Hammersmith, London, UK
-Fulham, London, UK
-Shepherd's Bush, London, UK
-Chiswick, London, UK
-Richmond, London, UK
-Putney, London, UK
-Wimbledon, London, UK
+Downtown Austin, Austin, TX, USA
+Central Austin, Austin, TX, USA
+Old West Austin, Austin, TX, USA
+Clarksville, Austin, TX, USA
+West Campus, Austin, TX, USA
+East Cesar Chavez, Austin, TX, USA
+Holly, Austin, TX, USA
+Mueller, Austin, TX, USA
+North Austin, Austin, TX, USA
+North Loop, Austin, TX, USA
+Brentwood, Austin, TX, USA
+Crestview, Austin, TX, USA
+Allandale, Austin, TX, USA
+Wooten, Austin, TX, USA
+Gracywoods, Austin, TX, USA
+Scofield Farms, Austin, TX, USA
+South Austin, Austin, TX, USA
+South Congress, Austin, TX, USA
+South Lamar, Austin, TX, USA
+Dawson, Austin, TX, USA
+Zilker, Austin, TX, USA
+Bouldin Creek, Austin, TX, USA
+St. Elmo District, Austin, TX, USA
+Galindo, Austin, TX, USA
+East Austin, Austin, TX, USA
+Chestnut, Austin, TX, USA
+Rosewood, Austin, TX, USA
+Govalle, Austin, TX, USA
+Del Valle, Austin, TX, USA
+Montopolis, Austin, TX, USA
+East MLK, Austin, TX, USA
+West Austin, Austin, TX, USA
+Tarrytown, Austin, TX, USA
+Rollingwood, Austin, TX, USA
+West Lake Hills, Austin, TX, USA
+Davenport Ranch, Austin, TX, USA
+Cuernavaca, Austin, TX, USA
+Northwest Austin, Austin, TX, USA
+Anderson Mill, Austin, TX, USA
+Oak Hill, Austin, TX, USA
+Great Hills, Austin, TX, USA
+Jollyville, Austin, TX, USA
+Four Points, Austin, TX, USA
+Northeast Austin, Austin, TX, USA
+Windsor Hills, Austin, TX, USA
+Coronado Hills, Austin, TX, USA
+University Hills, Austin, TX, USA
+Johnny Morris Road Area, Austin, TX, USA
+Southeast Austin, Austin, TX, USA
+Franklin Park, Austin, TX, USA
+McKinney, Austin, TX, USA
+Bluff Springs, Austin, TX, USA
+Dove Springs, Austin, TX, USA
+Pflugerville Area, Austin, TX, USA
+Round Rock Area, Austin, TX, USA
+Manor Area, Austin, TX, USA
+Bee Cave Area, Austin, TX, USA
+Lakeway Area, Austin, TX, USA
+Sunset Valley Area, Austin, TX, USA
