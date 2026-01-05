@@ -22,6 +22,15 @@ import pandas as pd
 import chardet
 from pathlib import Path
 
+# Add timeout exception and handler BEFORE logging config
+class TimeoutException(Exception):
+    """Raised when SIGALRM fires."""
+    pass
+
+def timeout_handler(signum, frame):
+    """Handle SIGALRM signal."""
+    raise TimeoutException("Hard timeout via SIGALRM")
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -402,7 +411,7 @@ class SocialMediaScraper:
                 file_to_read = input_file
                 logger.info(f"Fresh start: reading from {input_file}")
             
-            # Start one context for all websites (időnként reseteljük)
+            # Start one context for all websites
             context = await self.browser.new_context()
             
             # Globális gyorsítás: képek, videók, fontok, css, stb tiltása
@@ -465,6 +474,9 @@ class SocialMediaScraper:
             else:
                 logger.info(f"Resuming - using existing output file: {output_file}")
             
+            # Set up signal handler for hard timeout
+            signal.signal(signal.SIGALRM, timeout_handler)
+            
             # Process each row with retry logic
             for index, row in df.iterrows():
                 # Skip already processed rows
@@ -492,43 +504,36 @@ class SocialMediaScraper:
 
                 logger.info(f"Processing row {index + 1}/{len(df)}: {website}")
 
-                # per-URL új page
+                # Set hard timeout alarm (45 seconds per website)
+                signal.alarm(45)
+                
+                page = None
+                social_data = {}
+                
                 try:
-                    page = await context.new_page()
-                    # Set aggressive timeouts for memory-constrained scraping
-                    page.set_default_navigation_timeout(15000)  # 15s
-                    page.set_default_timeout(5000)  # 5s for selectors
-                except Exception as e:
-                    logger.error(f"Could not open new page for {website}: {e}")
-                    # próbáljunk teljes context resetet
-                    try:
-                        await context.close()
-                    except Exception:
-                        pass
-                    context = await self.browser.new_context()
-                    await context.route("**/*", route_handler)
                     page = await context.new_page()
                     page.set_default_navigation_timeout(15000)
                     page.set_default_timeout(5000)
-
-                # Retry logic for each website
-                social_data = {}
-                try:
+                    
+                    # Scrape with asyncio timeout
                     social_data = await asyncio.wait_for(
                         self.scrape_website(website, page),
                         timeout=float(self.max_scrape_time)
                     )
-                except asyncio.TimeoutError:
-                    logger.warning(f"Hard timeout for {website}, forcing browser restart")
+                    
+                except TimeoutException:
+                    logger.warning(f"SIGALRM hard timeout (45s) for {website} - forcing cleanup")
                     social_data = {
                         'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
                         'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
                     }
-                    # Force page close and context reset
-                    try:
-                        await page.close()
-                    except Exception:
-                        pass
+                    # Force page close
+                    if page:
+                        try:
+                            await page.close()
+                        except Exception:
+                            pass
+                    # Force context reset
                     try:
                         await context.close()
                     except Exception:
@@ -536,18 +541,44 @@ class SocialMediaScraper:
                     gc.collect()
                     context = await self.browser.new_context()
                     await context.route("**/*", route_handler)
+                    
+                except asyncio.TimeoutError:
+                    logger.warning(f"Asyncio timeout ({self.max_scrape_time}s) for {website}")
+                    social_data = {
+                        'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
+                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
+                    }
+                    # Force cleanup
+                    if page:
+                        try:
+                            await page.close()
+                        except Exception:
+                            pass
+                    try:
+                        await context.close()
+                    except Exception:
+                        pass
+                    gc.collect()
+                    context = await self.browser.new_context()
+                    await context.route("**/*", route_handler)
+                    
                 except Exception as e:
                     logger.error(f"Failed for {website}: {e}")
                     social_data = {
                         'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
                         'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
                     }
+                    
                 finally:
-                    # per-URL page bezárása, hogy ne maradjon „beragadt" állapot
-                    try:
-                        await page.close()
-                    except Exception:
-                        pass
+                    # Cancel alarm
+                    signal.alarm(0)
+                    
+                    # Close page if still open
+                    if page:
+                        try:
+                            await page.close()
+                        except Exception:
+                            pass
 
                 # Update the dataframe
                 df.at[index, 'scraped_email'] = social_data.get('email', '')
@@ -631,6 +662,9 @@ class SocialMediaScraper:
                 # Add a small delay between requests
                 await asyncio.sleep(0.2)
             
+            # Reset signal handler
+            signal.alarm(0)
+            
             # Reset progress file after completion
             if progress_file.exists():
                 progress_file.unlink()
@@ -642,6 +676,9 @@ class SocialMediaScraper:
             logger.error(f"Error processing CSV: {e}")
             raise
         finally:
+            # Cancel any pending alarm
+            signal.alarm(0)
+            
             # Ensure context is closed even if an error occurred
             if context:
                 try:
@@ -790,27 +827,15 @@ class SocialMediaScraper:
                             all_whatsapp.add(w)
 
                 # 5) Extract social media links
-                social_links = self.extract_social_links(content, full_url)
-                for platform, link in social_links.items():
-                    # Only add if we don't have one yet (don't overwrite)
-                    if platform not in social_links_final:
-                        social_links_final[platform] = link
-                        logger.info(f"Found {platform}: {link}")
-                
-                # Update result for early exit check
-                if all_emails:
-                    result['email'] = self.get_best_email(list(all_emails))
-                if all_phones:
-                    result['phone'] = ', '.join(sorted(list(all_phones), key=lambda x: (x.startswith('+36'), x.startswith('06'), len(x)), reverse=True)[:3])
-                for platform, link in social_links_final.items():
-                    result[platform] = link
-                
-                # Memória felszabadítás
-                del content
-                
-                # Early exit: ha már van elég adat, ne menj tovább
-                if result['email'] and result['phone'] and (
-                    result['facebook'] or result['instagram'] or result['linkedin']
+                social_links = self.extract_social_links(content, base_url)
+                if social_links:
+                    social_links_final.update(social_links)
+
+                # Check if we have enough data to stop further checks
+                if (
+                    all_emails
+                    and all_phones
+                    and social_links_final.get('facebook') or social_links_final.get('instagram') or social_links_final.get('linkedin')
                 ):
                     logger.info("Sufficient data found, stopping further page checks.")
                     break
