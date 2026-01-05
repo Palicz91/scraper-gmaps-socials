@@ -39,7 +39,6 @@ def create_driver():
     # ✅ NEW: Memória optimalizálás
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-plugins")
-    options.add_argument("--single-process")  # Kevesebb memória
 
     # user-agent a blokkolás elkerülésére
     options.add_argument(
@@ -176,18 +175,13 @@ def get_place_data(driver, url, max_retries=3):
             item['lat'] = lat
             item['lng'] = lng
             
-            # Rating (csillag) - többféle selectorral próbálkozunk
-            rating_text = (
-                selector.css('.F7nice::text').get()
-                or selector.css('.MW4etd::text').get()
-                or selector.css('span[aria-label*="star"]::attr(aria-label)').get()
-                or selector.css('div[role="img"][aria-label*="star"]::attr(aria-label)').get()
-            )
-
-            if rating_text:
-                m = re.search(r'([\d.]+)', rating_text)
-                item['rating'] = m.group(1) if m else ''
-            else:
+            # ✅ FIXED: Rating extraction using Selenium directly (more reliable)
+            try:
+                rating_elem = driver.find_element(By.CSS_SELECTOR, 'div[role="img"][aria-label*="star"]')
+                aria = rating_elem.get_attribute('aria-label')  # "4.5 stars"
+                m = re.search(r'([\d.,]+)', aria)
+                item['rating'] = m.group(1).replace(',', '.') if m else ''
+            except:
                 item['rating'] = ''
 
             reviews_text = selector.xpath('//span[contains(@aria-label, "review")]/@aria-label').get()
