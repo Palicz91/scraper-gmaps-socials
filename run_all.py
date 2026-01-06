@@ -14,11 +14,53 @@ BASE_DIR = Path(__file__).resolve().parent
 GMAPS_DIR = BASE_DIR / "20251105 GMaps Scraper"
 SOCIAL_DIR = BASE_DIR / "20251105 Socials Scraper"
 
+# Törlendő fájlok
+GMAPS_ARTIFACTS = [
+    "links.txt",
+    "places_data.csv",
+    "last_processed.txt",
+    "google_maps_queries.txt",
+    "scraper_log.txt",
+]
+
+SOCIAL_ARTIFACTS = [
+    "input.csv",
+    "output.csv",
+    "output_cleared.csv",
+    "scraper.log",
+]
+
 scripts = [
     GMAPS_DIR / "make_queries.py",
     GMAPS_DIR / "search_query.py",
     GMAPS_DIR / "get_place_data.py",
 ]
+
+
+def cleanup_artifacts():
+    """Törli az előző futás fájljait."""
+    deleted = 0
+    
+    for filename in GMAPS_ARTIFACTS:
+        filepath = GMAPS_DIR / filename
+        if filepath.exists():
+            filepath.unlink()
+            print(f"  🗑️  {filepath}")
+            deleted += 1
+    
+    for filename in SOCIAL_ARTIFACTS:
+        filepath = SOCIAL_DIR / filename
+        if filepath.exists():
+            filepath.unlink()
+            print(f"  🗑️  {filepath}")
+            deleted += 1
+    
+    if deleted == 0:
+        print("  ℹ️  Nem volt törölhető fájl.")
+    else:
+        print(f"  ✅ {deleted} fájl törölve.")
+    logging.info(f"Cleanup: {deleted} fájl törölve.")
+
 
 def run_script(script_path: Path, retries=2, cwd: Path | None = None):
     for attempt in range(1, retries + 2):
@@ -43,6 +85,7 @@ def run_script(script_path: Path, retries=2, cwd: Path | None = None):
                 print("⚠️ Feladom ezt a scriptet.")
                 return False
 
+
 def run_postprocess(input_csv: Path):
     postprocess_script = SOCIAL_DIR / "postprocess_places.py"
     if not postprocess_script.exists():
@@ -52,7 +95,6 @@ def run_postprocess(input_csv: Path):
 
     print(f"\n🚀 Postprocess futtatása: {postprocess_script} {input_csv}")
     logging.info(f"Postprocess futtatása: {postprocess_script} {input_csv}")
-
     try:
         subprocess.run(
             ["python3", str(postprocess_script), str(input_csv)],
@@ -65,9 +107,19 @@ def run_postprocess(input_csv: Path):
         print(f"❌ Postprocess hiba: {e}")
         logging.error(f"Postprocess hiba: {e}")
 
+
 if __name__ == "__main__":
     print("=== RUN ALL START ===")
     logging.info("=== RUN ALL START ===")
+
+    # Cleanup kérdés
+    answer = input("\n🧹 Töröljem az előző futás fájljait? (i/n): ").strip().lower()
+    if answer in ("i", "y", "yes", "igen"):
+        print("\nTörlés...")
+        cleanup_artifacts()
+    else:
+        print("ℹ️  Törlés kihagyva.")
+        logging.info("Cleanup kihagyva user kérésére.")
 
     for script in scripts:
         ok = run_script(script, cwd=GMAPS_DIR)
@@ -100,5 +152,3 @@ if __name__ == "__main__":
             logging.warning("places_data.csv hiányzik.")
 
     print("\n🏁 Kész.")
-
-
