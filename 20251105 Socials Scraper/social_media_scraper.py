@@ -433,8 +433,17 @@ class SocialMediaScraper:
             
             for encoding in encodings_to_try:
                 try:
-                    df = pd.read_csv(file_to_read, encoding=encoding, dtype=str, low_memory=True)
-                    logger.info(f"Successfully loaded CSV with {encoding} encoding")
+                    # Sniff delimiter from first 2048 bytes
+                    with open(file_to_read, 'r', encoding=encoding) as f:
+                        sample = f.read(2048)
+                    
+                    if sample.count(';') > sample.count(','):
+                        sep = ';'
+                    else:
+                        sep = ','
+                    
+                    df = pd.read_csv(file_to_read, encoding=encoding, dtype=str, low_memory=True, sep=sep)
+                    logger.info(f"Successfully loaded CSV with {encoding} encoding and '{sep}' separator")
                     break
                 except (UnicodeDecodeError, UnicodeError):
                     logger.warning(f"Failed to read with {encoding} encoding, trying next...")
