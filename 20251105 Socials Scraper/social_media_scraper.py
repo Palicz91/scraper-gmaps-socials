@@ -836,7 +836,7 @@ class SocialMediaScraper:
                             all_whatsapp.add(w)
 
                 # 5) Extract social media links
-                social_links = self.extract_social_links(content, base_url)
+                social_links = self.extract_social_links(content, base)
                 if social_links:
                     social_links_final.update(social_links)
 
