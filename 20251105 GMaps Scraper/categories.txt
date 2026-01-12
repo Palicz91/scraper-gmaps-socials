@@ -1,16 +1,41 @@
-plumber
-plumbing
-drain cleaning
-sewer & drain
-water heater repair
-water heater installation
-leak repair
-pipe repair
-electrician
-electrical
-breaker panel repair
-panel upgrade
-outlet installation
-lighting installation
-ceiling fan installation
-EV charger installation
+cafe
+coffee shop
+restaurant
+bistro
+bar
+pub
+wine bar
+cocktail bar
+brunch
+breakfast restaurant
+italian restaurant
+pizza restaurant
+indian restaurant
+chinese restaurant
+thai restaurant
+japanese restaurant
+sushi restaurant
+korean restaurant
+vietnamese restaurant
+mexican restaurant
+spanish restaurant
+tapas bar
+greek restaurant
+turkish restaurant
+lebanese restaurant
+middle eastern restaurant
+french restaurant
+american restaurant
+burger restaurant
+steakhouse
+seafood restaurant
+fish and chips
+gastropub
+brasserie
+tea room
+bakery
+patisserie
+dessert shop
+sandwich shop
+deli
+food hall
