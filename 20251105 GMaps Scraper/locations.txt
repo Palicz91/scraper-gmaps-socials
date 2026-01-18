@@ -1,168 +1,59 @@
-Circular Quay, Sydney, NSW, Australia
-The Rocks, Sydney, NSW, Australia
-Sydney Place, Circular Quay, Sydney, NSW, Australia
-Wynyard, Sydney, NSW, Australia
-Martin Place, Sydney, NSW, Australia
-Barangaroo, Sydney, NSW, Australia
-Darling Harbour, Sydney, NSW, Australia
-Darling Square, Haymarket, Sydney, NSW, Australia
-Haymarket, Sydney, NSW, Australia
-Chinatown, Haymarket, Sydney, NSW, Australia
-Central Station, Haymarket, Sydney, NSW, Australia
-Pyrmont, Sydney, NSW, Australia
-Paddy’s Markets, Haymarket, Sydney, NSW, Australia
-Town Hall, Sydney, NSW, Australia
-Queen Victoria Building, Sydney, NSW, Australia
-George Street, Sydney, NSW, Australia
-Pitt Street Mall, Sydney, NSW, Australia
-Pitt Street, Sydney, NSW, Australia
-Castlereagh Street, Sydney, NSW, Australia
-King Street Wharf, Sydney, NSW, Australia
-Circular Quay Wharf, Sydney, NSW, Australia
-Macquarie Street, Sydney, NSW, Australia
-Hyde Park, Sydney, NSW, Australia
-St Mary’s Cathedral area, Sydney, NSW, Australia
-Oxford Street, Darlinghurst, Sydney, NSW, Australia
-Darlinghurst, Sydney, NSW, Australia
-Kings Cross, Sydney, NSW, Australia
-Potts Point, Sydney, NSW, Australia
-Woolloomooloo, Sydney, NSW, Australia
-Surry Hills, Sydney, NSW, Australia
-Crown Street, Surry Hills, Sydney, NSW, Australia
-Bourke Street, Surry Hills, Sydney, NSW, Australia
-Elizabeth Street, Surry Hills, Sydney, NSW, Australia
-Chippendale, Sydney, NSW, Australia
-Spice Alley, Chippendale, Sydney, NSW, Australia
-Ultimo, Sydney, NSW, Australia
-Glebe, Sydney, NSW, Australia
-Glebe Point Road, Glebe, Sydney, NSW, Australia
-Newtown, Sydney, NSW, Australia
-King Street, Newtown, Sydney, NSW, Australia
-Enmore, Sydney, NSW, Australia
-Enmore Road, Enmore, Sydney, NSW, Australia
-Erskineville, Sydney, NSW, Australia
-Redfern, Sydney, NSW, Australia
-Waterloo, Sydney, NSW, Australia
-Paddington, Sydney, NSW, Australia
-Five Ways, Paddington, Sydney, NSW, Australia
-Bondi Junction, Sydney, NSW, Australia
-Bondi Beach, NSW, Australia
-Campbell Parade, Bondi Beach, NSW, Australia
-Bronte, NSW, Australia
-Coogee, NSW, Australia
-Manly, NSW, Australia
-The Corso, Manly, NSW, Australia
-Neutral Bay, NSW, Australia
-Kirribilli, NSW, Australia
-Milsons Point, NSW, Australia
-North Sydney, NSW, Australia
-Chatswood, NSW, Australia
-Parramatta, NSW, Australia
-Melbourne CBD, VIC, Australia
-Flinders Street Station, Melbourne, VIC, Australia
-Federation Square, Melbourne, VIC, Australia
-Southbank, Melbourne, VIC, Australia
-Crown Melbourne, Southbank, VIC, Australia
-Docklands, Melbourne, VIC, Australia
-Spencer Street, Melbourne, VIC, Australia
-Collins Street, Melbourne, VIC, Australia
-Bourke Street Mall, Melbourne, VIC, Australia
-Swanston Street, Melbourne, VIC, Australia
-Elizabeth Street, Melbourne, VIC, Australia
-Queen Victoria Market, Melbourne, VIC, Australia
-Chinatown, Little Bourke Street, Melbourne, VIC, Australia
-Little Bourke Street, Melbourne, VIC, Australia
-Lonsdale Street, Melbourne, VIC, Australia
-Hardware Lane, Melbourne, VIC, Australia
-Flinders Lane, Melbourne, VIC, Australia
-Degraves Street, Melbourne, VIC, Australia
-Centre Place, Melbourne, VIC, Australia
-Block Arcade, Melbourne, VIC, Australia
-Royal Arcade, Melbourne, VIC, Australia
-Hosier Lane, Melbourne, VIC, Australia
-AC/DC Lane, Melbourne, VIC, Australia
-Chinatown (Russell Street end), Melbourne, VIC, Australia
-Carlton, Melbourne, VIC, Australia
-Lygon Street, Carlton, Melbourne, VIC, Australia
-Brunswick, Melbourne, VIC, Australia
-Sydney Road, Brunswick, VIC, Australia
-Brunswick East, VIC, Australia
-Fitzroy, Melbourne, VIC, Australia
-Brunswick Street, Fitzroy, VIC, Australia
-Smith Street, Fitzroy, VIC, Australia
-Collingwood, Melbourne, VIC, Australia
-Smith Street, Collingwood, VIC, Australia
-Johnston Street, Collingwood, VIC, Australia
-Richmond, Melbourne, VIC, Australia
-Swan Street, Richmond, VIC, Australia
-Bridge Road, Richmond, VIC, Australia
-Abbotsford, VIC, Australia
-Victoria Street, Abbotsford, VIC, Australia
-South Yarra, VIC, Australia
-Chapel Street, South Yarra, VIC, Australia
-Prahran, VIC, Australia
-Chapel Street, Prahran, VIC, Australia
-Prahran Market, South Yarra, VIC, Australia
-Windsor, VIC, Australia
-St Kilda, VIC, Australia
-Acland Street, St Kilda, VIC, Australia
-Fitzroy Street, St Kilda, VIC, Australia
-Albert Park, VIC, Australia
-South Melbourne, VIC, Australia
-South Melbourne Market, VIC, Australia
-Port Melbourne, VIC, Australia
-Footscray, VIC, Australia
-Yarraville, VIC, Australia
-Williamstown, VIC, Australia
-Chadstone, VIC, Australia
-Brisbane CBD, QLD, Australia
-Queen Street Mall, Brisbane City, QLD, Australia
-Edward Street, Brisbane City, QLD, Australia
-Adelaide Street, Brisbane City, QLD, Australia
-George Street, Brisbane City, QLD, Australia
-Eagle Street Pier area, Brisbane City, QLD, Australia
-Riverside Centre area, Brisbane City, QLD, Australia
-Central Station, Brisbane City, QLD, Australia
-Roma Street Parkland area, Brisbane City, QLD, Australia
-South Bank, South Brisbane, QLD, Australia
-Grey Street, South Brisbane, QLD, Australia
-Little Stanley Street, South Brisbane, QLD, Australia
-Queens Wharf Brisbane area, Brisbane City, QLD, Australia
-Kangaroo Point, QLD, Australia
-Howard Smith Wharves, Brisbane City, QLD, Australia
-Fortitude Valley, QLD, Australia
-Brunswick Street, Fortitude Valley, QLD, Australia
-James Street, Fortitude Valley, QLD, Australia
-Chinatown Mall, Fortitude Valley, QLD, Australia
-New Farm, QLD, Australia
-Brisbane Powerhouse area, New Farm, QLD, Australia
-Teneriffe, QLD, Australia
-Commercial Road, Teneriffe, QLD, Australia
-Newstead, QLD, Australia
-Gasworks Plaza, Newstead, QLD, Australia
-West End, QLD, Australia
-Boundary Street, West End, QLD, Australia
-South Brisbane, QLD, Australia
-Woolloongabba, QLD, Australia
-Logan Road dining strip, Woolloongabba, QLD, Australia
-Paddington, QLD, Australia
-Given Terrace, Paddington, QLD, Australia
-Rosalie Village, Paddington, QLD, Australia
-Milton, QLD, Australia
-Park Road, Milton, QLD, Australia
-Toowong, QLD, Australia
-Indooroopilly, QLD, Australia
-Auchenflower, QLD, Australia
-Spring Hill, QLD, Australia
-Bowen Hills, QLD, Australia
-Albion, QLD, Australia
-Stones Corner, Greenslopes, QLD, Australia
-Sunnybank, QLD, Australia
-Eat Street Northshore, Hamilton, QLD, Australia
-Portside Wharf, Hamilton, QLD, Australia
-Bulimba, QLD, Australia
-Oxford Street, Bulimba, QLD, Australia
-Hawthorne, QLD, Australia
-Morningside, QLD, Australia
-Wynnum, QLD, Australia
-Manly Harbour Village, QLD, Australia
+Downtown Austin, Austin, TX, USA
+Central Austin, Austin, TX, USA
+Old West Austin, Austin, TX, USA
+Clarksville, Austin, TX, USA
+West Campus, Austin, TX, USA
+East Cesar Chavez, Austin, TX, USA
+Holly, Austin, TX, USA
+Mueller, Austin, TX, USA
+North Austin, Austin, TX, USA
+North Loop, Austin, TX, USA
+Brentwood, Austin, TX, USA
+Crestview, Austin, TX, USA
+Allandale, Austin, TX, USA
+Wooten, Austin, TX, USA
+Gracywoods, Austin, TX, USA
+Scofield Farms, Austin, TX, USA
+South Austin, Austin, TX, USA
+South Congress, Austin, TX, USA
+South Lamar, Austin, TX, USA
+Dawson, Austin, TX, USA
+Zilker, Austin, TX, USA
+Bouldin Creek, Austin, TX, USA
+St. Elmo District, Austin, TX, USA
+Galindo, Austin, TX, USA
+East Austin, Austin, TX, USA
+Chestnut, Austin, TX, USA
+Rosewood, Austin, TX, USA
+Govalle, Austin, TX, USA
+Del Valle, Austin, TX, USA
+Montopolis, Austin, TX, USA
+East MLK, Austin, TX, USA
+West Austin, Austin, TX, USA
+Tarrytown, Austin, TX, USA
+Rollingwood, Austin, TX, USA
+West Lake Hills, Austin, TX, USA
+Davenport Ranch, Austin, TX, USA
+Cuernavaca, Austin, TX, USA
+Northwest Austin, Austin, TX, USA
+Anderson Mill, Austin, TX, USA
+Oak Hill, Austin, TX, USA
+Great Hills, Austin, TX, USA
+Jollyville, Austin, TX, USA
+Four Points, Austin, TX, USA
+Northeast Austin, Austin, TX, USA
+Windsor Hills, Austin, TX, USA
+Coronado Hills, Austin, TX, USA
+University Hills, Austin, TX, USA
+Johnny Morris Road Area, Austin, TX, USA
+Southeast Austin, Austin, TX, USA
+Franklin Park, Austin, TX, USA
+McKinney, Austin, TX, USA
+Bluff Springs, Austin, TX, USA
+Dove Springs, Austin, TX, USA
+Pflugerville Area, Austin, TX, USA
+Round Rock Area, Austin, TX, USA
+Manor Area, Austin, TX, USA
+Bee Cave Area, Austin, TX, USA
+Lakeway Area, Austin, TX, USA
+Sunset Valley Area, Austin, TX, USA
