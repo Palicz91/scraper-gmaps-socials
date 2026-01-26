@@ -87,6 +87,29 @@ class SocialMediaScraper:
             r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
         ]
         
+        # Chatbot signatures for detection
+        self.chatbot_signatures = [
+            'tidio', 'tidiochat',
+            'intercom', 'intercom-container',
+            'drift', 'drift-widget',
+            'crisp', 'crisp-client',
+            'hubspot-messages', 'hs-messages',
+            'zendesk', 'zopim',
+            'livechat', 'livechatinc',
+            'tawk', 'tawk.to',
+            'freshchat', 'freshdesk',
+            'olark',
+            'chatra',
+            'botpress',
+            'voiceflow',
+            'landbot',
+            'manychat',
+            'chatbot.com',
+            'kommunicate',
+            'userlike',
+            'smartsupp',
+            'jivochat', 'jivosite'
+        ]
         
         # Social media URL patterns
         self.social_patterns = {
@@ -134,6 +157,14 @@ class SocialMediaScraper:
         self.unprofessional_indicators = [
             'test@', 'temp@', 'example@', 'sample@', 'dummy@'
         ]
+
+    def detect_chatbot(self, content: str) -> Tuple[bool, str]:
+        """Check if page has a chatbot widget."""
+        content_lower = content.lower()
+        for sig in self.chatbot_signatures:
+            if sig in content_lower:
+                return True, sig
+        return False, ''
 
     def get_best_email(self, emails: List[str]) -> str:
         """Score emails and return the most professional one."""
@@ -459,7 +490,7 @@ class SocialMediaScraper:
                 logger.error("'website' column not found in input CSV")
                 return
             
-            # Add new columns for social media data including raw email
+            # Add new columns for social media data including chatbot detection
             social_columns = [
                 'scraped_email',
                 'scraped_email_raw',
@@ -469,7 +500,9 @@ class SocialMediaScraper:
                 'scraped_instagram',
                 'scraped_linkedin',
                 'scraped_twitter',
-                'scraped_tiktok'
+                'scraped_tiktok',
+                'has_chatbot',
+                'chatbot_type'
             ]
             
             for col in social_columns:
@@ -534,7 +567,8 @@ class SocialMediaScraper:
                     logger.warning(f"SIGALRM hard timeout (45s) for {website} - forcing cleanup")
                     social_data = {
                         'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
-                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
+                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': '',
+                        'has_chatbot': 'NO', 'chatbot_type': ''
                     }
                     # Force page close
                     if page:
@@ -555,7 +589,8 @@ class SocialMediaScraper:
                     logger.warning(f"Asyncio timeout ({self.max_scrape_time}s) for {website}")
                     social_data = {
                         'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
-                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
+                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': '',
+                        'has_chatbot': 'NO', 'chatbot_type': ''
                     }
                     # Force cleanup
                     if page:
@@ -575,7 +610,8 @@ class SocialMediaScraper:
                     logger.error(f"Failed for {website}: {e}")
                     social_data = {
                         'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
-                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': ''
+                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': '',
+                        'has_chatbot': 'NO', 'chatbot_type': ''
                     }
                     
                 finally:
@@ -599,6 +635,8 @@ class SocialMediaScraper:
                 df.at[index, 'scraped_linkedin'] = social_data.get('linkedin', '')
                 df.at[index, 'scraped_twitter'] = social_data.get('twitter', '')
                 df.at[index, 'scraped_tiktok'] = social_data.get('tiktok', '')
+                df.at[index, 'has_chatbot'] = social_data.get('has_chatbot', 'NO')
+                df.at[index, 'chatbot_type'] = social_data.get('chatbot_type', '')
                 
                 # X soronként context reset (pl. 50-nél memory miatt)
                 if (index + 1) % 50 == 0:
@@ -716,7 +754,9 @@ class SocialMediaScraper:
             'instagram': '',
             'linkedin': '',
             'twitter': '',
-            'tiktok': ''
+            'tiktok': '',
+            'has_chatbot': 'NO',
+            'chatbot_type': ''
         }
         
         if not url or url.strip() == '':
@@ -754,6 +794,8 @@ class SocialMediaScraper:
             all_phones = set()
             all_whatsapp = set()
             social_links_final = {}
+            chatbot_detected = False
+            chatbot_type_found = ''
 
             # 0) Check the ORIGINAL URL first
             pages_to_check = [url]
@@ -840,13 +882,22 @@ class SocialMediaScraper:
                 if social_links:
                     social_links_final.update(social_links)
 
+                # NEW: Detect chatbot
+                if not chatbot_detected:
+                    has_chatbot, chatbot_type = self.detect_chatbot(content)
+                    if has_chatbot:
+                        chatbot_detected = True
+                        chatbot_type_found = chatbot_type
+                        logger.info(f"Found chatbot: {chatbot_type}")
+
                 # Check if we have enough data to stop further checks
                 if (
                     all_emails
                     and all_phones
-                    and social_links_final.get('facebook') or social_links_final.get('instagram') or social_links_final.get('linkedin')
+                    and (social_links_final.get('facebook') or social_links_final.get('instagram') or social_links_final.get('linkedin'))
+                    and chatbot_detected
                 ):
-                    logger.info("Sufficient data found, stopping further page checks.")
+                    logger.info("Sufficient data found (including chatbot), stopping further page checks.")
                     break
             
             # Compile final results
@@ -878,6 +929,11 @@ class SocialMediaScraper:
                 logger.warning(f"Timeout checking meta tags for {url}")
             except Exception as e:
                 logger.warning(f"Error checking meta tags for {url}: {e}")
+            
+            # Add chatbot results
+            if chatbot_detected:
+                result['has_chatbot'] = 'YES'
+                result['chatbot_type'] = chatbot_type_found
             
         except PlaywrightTimeoutError:
             logger.warning(f"Timeout while scraping {url}")
