@@ -1,41 +1,17 @@
-Roofing
-roofer
-Painter
-painting
-Garage door supplier
-Garage door repair
-Masonry
-Concrete
-Fence
-fencing
-Landscaper
-Landscaping
-lawn care
-Paving
-Driveway
-Asphalt
-Gutter
-Siding
-Vinyl siding
-Window installation
-Door supplier
-Flooring
-floor
-Deck builder
-Patio contractor
-Pool contractor
-Pool cleaning
-Pool repair
-Insulation
-Spray foam
-Drywall
-Carpenter
-Carpentry
-Demolition
-Excavating
-Septic system
-Septic tank 
-Waterproofing
-Foundation
-Chimney
+real estate agency
+real estate agent
+realtor
+real estate broker
+real estate office
+property management
+home sales
+residential real estate
+luxury real estate
+commercial real estate
+real estate company
+realty
+homes for sale
+real estate services
+buyer agent
+listing agent
 
