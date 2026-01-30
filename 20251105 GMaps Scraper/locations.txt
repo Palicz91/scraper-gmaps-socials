@@ -1,59 +1,50 @@
-Downtown Austin, Austin, TX, USA
-Central Austin, Austin, TX, USA
-Old West Austin, Austin, TX, USA
-Clarksville, Austin, TX, USA
-West Campus, Austin, TX, USA
-East Cesar Chavez, Austin, TX, USA
-Holly, Austin, TX, USA
-Mueller, Austin, TX, USA
-North Austin, Austin, TX, USA
-North Loop, Austin, TX, USA
-Brentwood, Austin, TX, USA
-Crestview, Austin, TX, USA
-Allandale, Austin, TX, USA
-Wooten, Austin, TX, USA
-Gracywoods, Austin, TX, USA
-Scofield Farms, Austin, TX, USA
-South Austin, Austin, TX, USA
-South Congress, Austin, TX, USA
-South Lamar, Austin, TX, USA
-Dawson, Austin, TX, USA
-Zilker, Austin, TX, USA
-Bouldin Creek, Austin, TX, USA
-St. Elmo District, Austin, TX, USA
-Galindo, Austin, TX, USA
-East Austin, Austin, TX, USA
-Chestnut, Austin, TX, USA
-Rosewood, Austin, TX, USA
-Govalle, Austin, TX, USA
-Del Valle, Austin, TX, USA
-Montopolis, Austin, TX, USA
-East MLK, Austin, TX, USA
-West Austin, Austin, TX, USA
-Tarrytown, Austin, TX, USA
-Rollingwood, Austin, TX, USA
-West Lake Hills, Austin, TX, USA
-Davenport Ranch, Austin, TX, USA
-Cuernavaca, Austin, TX, USA
-Northwest Austin, Austin, TX, USA
-Anderson Mill, Austin, TX, USA
-Oak Hill, Austin, TX, USA
-Great Hills, Austin, TX, USA
-Jollyville, Austin, TX, USA
-Four Points, Austin, TX, USA
-Northeast Austin, Austin, TX, USA
-Windsor Hills, Austin, TX, USA
-Coronado Hills, Austin, TX, USA
-University Hills, Austin, TX, USA
-Johnny Morris Road Area, Austin, TX, USA
-Southeast Austin, Austin, TX, USA
-Franklin Park, Austin, TX, USA
-McKinney, Austin, TX, USA
-Bluff Springs, Austin, TX, USA
-Dove Springs, Austin, TX, USA
-Pflugerville Area, Austin, TX, USA
-Round Rock Area, Austin, TX, USA
-Manor Area, Austin, TX, USA
-Bee Cave Area, Austin, TX, USA
-Lakeway Area, Austin, TX, USA
-Sunset Valley Area, Austin, TX, USA
+Downtown Phoenix, Phoenix, AZ, USA
+Midtown Phoenix, Phoenix, AZ, USA
+Uptown Phoenix, Phoenix, AZ, USA
+Central City, Phoenix, AZ, USA
+Encanto, Phoenix, AZ, USA
+Coronado, Phoenix, AZ, USA
+Willo, Phoenix, AZ, USA
+Roosevelt Row, Phoenix, AZ, USA
+Garfield, Phoenix, AZ, USA
+North Phoenix, Phoenix, AZ, USA
+Desert View, Phoenix, AZ, USA
+Paradise Valley Village, Phoenix, AZ, USA
+Deer Valley, Phoenix, AZ, USA
+Norterra, Phoenix, AZ, USA
+Anthem, Phoenix, AZ, USA
+South Phoenix, Phoenix, AZ, USA
+Laveen, Phoenix, AZ, USA
+South Mountain, Phoenix, AZ, USA
+Ahwatukee, Phoenix, AZ, USA
+West Phoenix, Phoenix, AZ, USA
+Maryvale, Phoenix, AZ, USA
+Estrella, Phoenix, AZ, USA
+Goodyear Area, Phoenix, AZ, USA
+Avondale Area, Phoenix, AZ, USA
+Buckeye Area, Phoenix, AZ, USA
+East Phoenix, Phoenix, AZ, USA
+Arcadia, Phoenix, AZ, USA
+Biltmore, Phoenix, AZ, USA
+Camelback East, Phoenix, AZ, USA
+Paradise Valley, Phoenix, AZ, USA
+Scottsdale Area, Scottsdale, AZ, USA
+Old Town Scottsdale, Scottsdale, AZ, USA
+North Scottsdale, Scottsdale, AZ, USA
+South Scottsdale, Scottsdale, AZ, USA
+Tempe Area, Tempe, AZ, USA
+Downtown Tempe, Tempe, AZ, USA
+South Tempe, Tempe, AZ, USA
+Mesa Area, Mesa, AZ, USA
+Downtown Mesa, Mesa, AZ, USA
+East Mesa, Mesa, AZ, USA
+Gilbert Area, Gilbert, AZ, USA
+Chandler Area, Chandler, AZ, USA
+Downtown Chandler, Chandler, AZ, USA
+Glendale Area, Glendale, AZ, USA
+Peoria Area, Peoria, AZ, USA
+Surprise Area, Surprise, AZ, USA
+Cave Creek Area, Cave Creek, AZ, USA
+Fountain Hills Area, Fountain Hills, AZ, USA
+Queen Creek Area, Queen Creek, AZ, USA
+San Tan Valley Area, San Tan Valley, AZ, USA
