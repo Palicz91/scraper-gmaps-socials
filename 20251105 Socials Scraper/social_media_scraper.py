@@ -14,6 +14,7 @@ import os
 import signal
 import sys
 import gc  # Add garbage collection import
+import threading
 from urllib.parse import urljoin, urlparse
 from typing import Dict, List, Optional, Tuple
 import asyncio
@@ -46,7 +47,16 @@ logger = logging.getLogger(__name__)
 BAD_DOMAIN_PATTERNS = [
     "gulfcar.com",
     "autocarni.com",
-    "saulautosales.com",  # végtelen hang
+    "saulautosales.com",
+    "tinyurl.com",
+    "bit.ly",
+    "t.co",
+    "goo.gl",
+    "ow.ly",
+    "rebrand.ly",
+    "shorturl.at",
+    "buff.ly",
+    "is.gd",
 ]
 
 class SocialMediaScraper:
@@ -64,10 +74,20 @@ class SocialMediaScraper:
         self.max_scrape_time = max_scrape_time
         self.browser = None
         self.playwright = None
+        self.watchdog_triggered = False
         
         # Blacklisted domains that are known to be problematic
         self.BAD_DOMAIN_PATTERNS = [
-            "gulfcar.com"
+            "gulfcar.com",
+            "tinyurl.com",
+            "bit.ly",
+            "t.co",
+            "goo.gl",
+            "ow.ly",
+            "rebrand.ly",
+            "shorturl.at",
+            "buff.ly",
+            "is.gd",
         ]
         
         # Common contact page paths
@@ -218,8 +238,45 @@ class SocialMediaScraper:
             await self.playwright.stop()
         logger.info("Browser closed")
 
+    def is_valid_email(self, email: str) -> bool:
+        """Validate email format and filter out suspicious patterns."""
+        email = email.strip().lower()
+        
+        # Basic regex check
+        if not re.match(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$', email):
+            return False
+        
+        # Check for URL parameters or query strings
+        if any(x in email for x in ['?', '&', '/', '=', ' ']):
+            return False
+        
+        # Check for common invalid patterns
+        invalid_patterns = [
+            'example.com',
+            'test.com',
+            'domain.com',
+            'email.com',
+            'yoursite.com',
+            'company.com',
+            'yourdomain',
+        ]
+        
+        if any(pattern in email for pattern in invalid_patterns):
+            return False
+        
+        # Check for overly long local or domain parts
+        parts = email.split('@')
+        if len(parts) != 2:
+            return False
+        
+        local, domain = parts
+        if len(local) > 64 or len(domain) > 255:
+            return False
+        
+        return True
+
     def extract_emails(self, text: str) -> str:
-        """Extract ALL emails from text and return them comma-separated."""
+        """Extract ALL valid emails from text and return them comma-separated."""
         emails = []
         for pattern in self.email_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
@@ -228,11 +285,17 @@ class SocialMediaScraper:
         # obfuszkált formák
         emails.extend(self._normalize_obfuscated(text))
 
-        # Remove duplicates and convert to lowercase
-        emails = list(set([email.lower() for email in emails]))
+        # Remove duplicates and validate
+        valid_emails = []
+        seen = set()
+        for email in emails:
+            email_lower = email.lower()
+            if email_lower not in seen and self.is_valid_email(email_lower):
+                valid_emails.append(email_lower)
+                seen.add(email_lower)
         
-        # Return all emails comma-separated
-        return ', '.join(emails)
+        # Return all valid emails comma-separated
+        return ', '.join(valid_emails)
 
     def _normalize_obfuscated(self, text: str) -> List[str]:
         """Extract obfuscated emails with [at] and [dot] patterns."""
@@ -434,7 +497,7 @@ class SocialMediaScraper:
                     logger.warning(f"Could not read progress file: {e}")
                     start_index = 0
             
-            # Ha folytatunk, az output.csv-ből olvassunk (ott vannak az eddigi eredmények)
+            # Ha folytatunk, az output.csv-ból olvassunk (ott vannak az eddigi eredmények)
             if start_index > 0 and Path(output_file).exists():
                 file_to_read = output_file
                 logger.info(f"Resuming: reading from {output_file}")
@@ -537,7 +600,7 @@ class SocialMediaScraper:
                 # --- BLACKLIST CHECK ITT ---
                 parsed = urlparse(website if website.startswith(("http://", "https://")) else "https://" + website)
                 domain = parsed.netloc.lower()
-                if any(bad in domain for bad in BAD_DOMAIN_PATTERNS):
+                if any(bad in domain for bad in self.BAD_DOMAIN_PATTERNS):
                     logger.warning(f"Row {index + 1}: Blacklisted domain {domain}, skipping")
                     # Save progress for blacklisted domains too
                     progress_file.write_text(str(index + 1))
@@ -545,9 +608,6 @@ class SocialMediaScraper:
                 # ---------------------------
 
                 logger.info(f"Processing row {index + 1}/{len(df)}: {website}")
-
-                # Set hard timeout alarm (45 seconds per website)
-                signal.alarm(45)
                 
                 page = None
                 social_data = {}
@@ -557,54 +617,34 @@ class SocialMediaScraper:
                     page.set_default_navigation_timeout(15000)
                     page.set_default_timeout(5000)
                     
-                    # Scrape with asyncio timeout
-                    social_data = await asyncio.wait_for(
+                    # Use watchdog-protected scraping
+                    social_data = await self.process_row_with_watchdog(
                         self.scrape_website(website, page),
-                        timeout=float(self.max_scrape_time)
+                        timeout_sec=45
                     )
                     
-                except TimeoutException:
-                    logger.warning(f"SIGALRM hard timeout (45s) for {website} - forcing cleanup")
-                    social_data = {
-                        'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
-                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': '',
-                        'has_chatbot': 'NO', 'chatbot_type': ''
-                    }
-                    # Force page close
-                    if page:
+                    # Check if watchdog was triggered
+                    if self.watchdog_triggered or social_data is None:
+                        logger.warning(f"Watchdog timeout for {website} - forcing cleanup")
+                        social_data = {
+                            'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
+                            'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': '',
+                            'has_chatbot': 'NO', 'chatbot_type': ''
+                        }
+                        # Force page close
+                        if page:
+                            try:
+                                await page.close()
+                            except Exception:
+                                pass
+                        # Force context reset
                         try:
-                            await page.close()
+                            await context.close()
                         except Exception:
                             pass
-                    # Force context reset
-                    try:
-                        await context.close()
-                    except Exception:
-                        pass
-                    gc.collect()
-                    context = await self.browser.new_context()
-                    await context.route("**/*", route_handler)
-                    
-                except asyncio.TimeoutError:
-                    logger.warning(f"Asyncio timeout ({self.max_scrape_time}s) for {website}")
-                    social_data = {
-                        'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
-                        'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': '',
-                        'has_chatbot': 'NO', 'chatbot_type': ''
-                    }
-                    # Force cleanup
-                    if page:
-                        try:
-                            await page.close()
-                        except Exception:
-                            pass
-                    try:
-                        await context.close()
-                    except Exception:
-                        pass
-                    gc.collect()
-                    context = await self.browser.new_context()
-                    await context.route("**/*", route_handler)
+                        gc.collect()
+                        context = await self.browser.new_context()
+                        await context.route("**/*", route_handler)
                     
                 except Exception as e:
                     logger.error(f"Failed for {website}: {e}")
@@ -615,9 +655,6 @@ class SocialMediaScraper:
                     }
                     
                 finally:
-                    # Cancel alarm
-                    signal.alarm(0)
-                    
                     # Close page if still open
                     if page:
                         try:
@@ -734,6 +771,37 @@ class SocialMediaScraper:
                 except Exception:
                     pass
 
+    async def process_row_with_watchdog(self, coro, timeout_sec: int = 45):
+        """
+        Wrapper that uses a watchdog thread to enforce hard timeout.
+        
+        Args:
+            coro: Coroutine to execute
+            timeout_sec: Maximum time to wait before killing the operation
+            
+        Returns:
+            Result of the coroutine or None if timeout
+        """
+        done = asyncio.Event()
+        self.watchdog_triggered = False
+        
+        def watchdog():
+            if not done.wait(timeout_sec):
+                logger.warning(f"Watchdog fired after {timeout_sec}s - forcing cleanup")
+                self.watchdog_triggered = True
+        
+        t = threading.Thread(target=watchdog, daemon=True)
+        t.start()
+        
+        try:
+            result = await asyncio.wait_for(coro, timeout=float(timeout_sec - 1))
+            return result
+        except asyncio.TimeoutError:
+            logger.warning(f"Asyncio timeout after {timeout_sec}s")
+            return None
+        finally:
+            done.set()
+
     async def scrape_website(self, url: str, page: Page) -> Dict[str, str]:
         """
         Scrape a website for social media information by checking multiple pages.
@@ -776,7 +844,7 @@ class SocialMediaScraper:
         # domain + blacklist check itt is (extra védelem)
         parsed_for_domain = urlparse(url)
         domain = parsed_for_domain.netloc.lower()
-        if any(bad in domain for bad in BAD_DOMAIN_PATTERNS):
+        if any(bad in domain for bad in self.BAD_DOMAIN_PATTERNS):
             logger.warning(f"Skipping blacklisted domain in scrape_website: {domain}")
             return result
 
