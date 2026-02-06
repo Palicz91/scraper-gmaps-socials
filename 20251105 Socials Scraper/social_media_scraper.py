@@ -13,7 +13,7 @@ import logging
 import os
 import signal
 import sys
-import gc  # Add garbage collection import
+import gc
 import threading
 from urllib.parse import urljoin, urlparse
 from typing import Dict, List, Optional, Tuple
@@ -22,6 +22,7 @@ from playwright.async_api import async_playwright, Browser, Page, TimeoutError a
 import pandas as pd
 import chardet
 from pathlib import Path
+import psutil
 
 # Add timeout exception and handler BEFORE logging config
 class TimeoutException(Exception):
@@ -588,6 +589,10 @@ class SocialMediaScraper:
                 if index < start_index:
                     continue
                 
+                # Memory check every 10 rows
+                if (index + 1) % 10 == 0:
+                    context = await self.check_memory_and_restart(context, route_handler, index)
+                
                 website = row['website']
                 if pd.isna(website) or str(website).strip() == '':
                     logger.info(f"Row {index + 1}: No website URL, skipping")
@@ -617,15 +622,12 @@ class SocialMediaScraper:
                     page.set_default_navigation_timeout(15000)
                     page.set_default_timeout(5000)
                     
-                    # Use watchdog-protected scraping
-                    social_data = await self.process_row_with_watchdog(
-                        self.scrape_website(website, page),
-                        timeout_sec=45
-                    )
+                    # Use hard timeout-protected scraping
+                    social_data = await self.scrape_with_hard_timeout(website, page, timeout_sec=40)
                     
-                    # Check if watchdog was triggered
-                    if self.watchdog_triggered or social_data is None:
-                        logger.warning(f"Watchdog timeout for {website} - forcing cleanup")
+                    # Check if timeout occurred
+                    if social_data is None:
+                        logger.warning(f"Hard timeout for {website} - forcing cleanup")
                         social_data = {
                             'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '', 'facebook': '',
                             'instagram': '', 'linkedin': '', 'twitter': '', 'tiktok': '',
@@ -675,20 +677,20 @@ class SocialMediaScraper:
                 df.at[index, 'has_chatbot'] = social_data.get('has_chatbot', 'NO')
                 df.at[index, 'chatbot_type'] = social_data.get('chatbot_type', '')
                 
-                # X soronként context reset (pl. 50-nél memory miatt)
-                if (index + 1) % 50 == 0:
+                # Context reset every 20 rows (reduced from 50)
+                if (index + 1) % 20 == 0:
                     logger.info(f"Resetting browser context at row {index + 1} - forcing GC")
                     try:
                         await context.close()
                     except Exception:
                         pass
-                    gc.collect()  # explicit garbage collection
-                    await asyncio.sleep(0.5)  # kis szünet a memória felszabaduláshoz
+                    gc.collect()
+                    await asyncio.sleep(0.5)
                     context = await self.browser.new_context()
                     await context.route("**/*", route_handler)
                 
-                # Teljes browser restart 500 soronként
-                if (index + 1) % 500 == 0:
+                # Full browser restart every 200 rows (reduced from 500)
+                if (index + 1) % 200 == 0:
                     logger.info(f"Full browser restart at row {index + 1}")
                     try:
                         await context.close()
@@ -700,28 +702,11 @@ class SocialMediaScraper:
                         pass
                     gc.collect()
                     await asyncio.sleep(1)
-                    self.browser = await self.playwright.chromium.launch(
-                        headless=self.headless,
-                        args=[
-                            '--no-sandbox',
-                            '--disable-dev-shm-usage',
-                            '--disable-gpu',
-                            '--disable-extensions',
-                            '--disable-background-networking',
-                            '--disable-default-apps',
-                            '--disable-sync',
-                            '--disable-translate',
-                            '--mute-audio',
-                            '--no-first-run',
-                            '--safebrowsing-disable-auto-update',
-                            '--js-flags=--max-old-space-size=512',
-                            '--renderer-process-limit=2',
-                        ]
-                    )
+                    await self.start_browser()
                     context = await self.browser.new_context()
                     await context.route("**/*", route_handler)
                 
-                # Mentsd csak minden 25. sor után (vagy az utolsó sor végén)
+                # Save every 25 rows
                 if (index + 1) % 25 == 0 or (index + 1) == len(df):
                     try:
                         loop = asyncio.get_event_loop()
@@ -1011,6 +996,49 @@ class SocialMediaScraper:
             logger.error(f"Error scraping {url}: {e}")
         
         return result
+
+    async def scrape_with_hard_timeout(self, url, page, timeout_sec=40):
+        """Scrape with hard asyncio timeout and context recovery."""
+        try:
+            return await asyncio.wait_for(
+                self.scrape_website(url, page),
+                timeout=float(timeout_sec)
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Hard timeout after {timeout_sec}s for {url}")
+            return None
+
+    async def check_memory_and_restart(self, context, route_handler, index):
+        """Restart browser if memory usage is too high."""
+        try:
+            process = psutil.Process()
+            rss_mb = process.memory_info().rss / 1024 / 1024
+            # Also check child processes (Chromium)
+            children_rss = sum(c.memory_info().rss for c in process.children(recursive=True)) / 1024 / 1024
+            total_mb = rss_mb + children_rss
+            
+            if total_mb > 1500:  # 1.5 GB threshold
+                logger.warning(f"Memory too high ({total_mb:.0f} MB) at row {index}, forcing full restart")
+                try:
+                    await context.close()
+                except Exception:
+                    pass
+                try:
+                    await self.browser.close()
+                except Exception:
+                    pass
+                gc.collect()
+                await asyncio.sleep(2)
+                await self.start_browser()
+                context = await self.browser.new_context()
+                await context.route("**/*", route_handler)
+                return context
+            
+            logger.info(f"Memory usage at row {index}: {total_mb:.0f} MB (Python: {rss_mb:.0f}, Chromium: {children_rss:.0f})")
+        except Exception as e:
+            logger.warning(f"Error checking memory: {e}")
+        
+        return context
 
 # Graceful shutdown handling
 def handle_exit(sig, frame):
