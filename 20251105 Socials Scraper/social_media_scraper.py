@@ -15,6 +15,7 @@ import signal
 import sys
 import gc
 import threading
+import subprocess
 from urllib.parse import urljoin, urlparse
 from typing import Dict, List, Optional, Tuple
 import asyncio
@@ -589,9 +590,8 @@ class SocialMediaScraper:
                 if index < start_index:
                     continue
                 
-                # Memory check every 10 rows
-                if (index + 1) % 10 == 0:
-                    context = await self.check_memory_and_restart(context, route_handler, index)
+                # Memory check on EVERY row
+                context = await self.check_memory_and_restart(context, route_handler, index)
                 
                 website = row['website']
                 if pd.isna(website) or str(website).strip() == '':
@@ -1017,7 +1017,7 @@ class SocialMediaScraper:
             children_rss = sum(c.memory_info().rss for c in process.children(recursive=True)) / 1024 / 1024
             total_mb = rss_mb + children_rss
             
-            if total_mb > 1500:  # 1.5 GB threshold
+            if total_mb > 800:  # 800 MB threshold for 8GB server
                 logger.warning(f"Memory too high ({total_mb:.0f} MB) at row {index}, forcing full restart")
                 try:
                     await context.close()
@@ -1027,14 +1027,23 @@ class SocialMediaScraper:
                     await self.browser.close()
                 except Exception:
                     pass
+                
+                # Kill any orphaned chromium processes
+                try:
+                    subprocess.run(['pkill', '-f', 'chromium.*--type=renderer'], timeout=5)
+                except Exception:
+                    pass
+                
                 gc.collect()
-                await asyncio.sleep(2)
+                await asyncio.sleep(3)
                 await self.start_browser()
                 context = await self.browser.new_context()
                 await context.route("**/*", route_handler)
                 return context
             
-            logger.info(f"Memory usage at row {index}: {total_mb:.0f} MB (Python: {rss_mb:.0f}, Chromium: {children_rss:.0f})")
+            # Only log memory every 50 rows to reduce noise
+            if (index + 1) % 50 == 0:
+                logger.info(f"Memory usage at row {index}: {total_mb:.0f} MB (Python: {rss_mb:.0f}, Chromium: {children_rss:.0f})")
         except Exception as e:
             logger.warning(f"Error checking memory: {e}")
         
