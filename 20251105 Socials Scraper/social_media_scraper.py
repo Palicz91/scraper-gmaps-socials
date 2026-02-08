@@ -861,6 +861,16 @@ class SocialMediaScraper:
 
             # Check all pages
             for full_url in pages_to_check:
+                # Mid-scrape memory check
+                try:
+                    proc = psutil.Process()
+                    mid_mem = proc.memory_info().rss + sum(c.memory_info().rss for c in proc.children(recursive=True))
+                    if mid_mem > 500 * 1024 * 1024:
+                        logger.warning(f"Memory spike during scrape ({mid_mem // 1024 // 1024} MB), aborting this website")
+                        break
+                except Exception:
+                    pass
+
                 # hard wall erre a website-ra is
                 if time.time() - row_start_time > HARD_LIMIT:
                     logger.warning(f"Hard time limit exceeded for {url}, aborting scrape_website early.")
