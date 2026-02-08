@@ -1023,12 +1023,13 @@ class SocialMediaScraper:
         try:
             process = psutil.Process()
             rss_mb = process.memory_info().rss / 1024 / 1024
-            # Also check child processes (Chromium)
             children_rss = sum(c.memory_info().rss for c in process.children(recursive=True)) / 1024 / 1024
             total_mb = rss_mb + children_rss
             
-            if total_mb > 800:  # 800 MB threshold for 8GB server
+            if total_mb > 800:
                 logger.warning(f"Memory too high ({total_mb:.0f} MB) at row {index}, forcing full restart")
+                
+                # 1. Close gracefully
                 try:
                     await context.close()
                 except Exception:
@@ -1037,18 +1038,41 @@ class SocialMediaScraper:
                     await self.browser.close()
                 except Exception:
                     pass
-                
-                # Kill any orphaned chromium processes
                 try:
-                    subprocess.run(['pkill', '-f', 'chromium.*--type=renderer'], timeout=5)
+                    await self.playwright.stop()
                 except Exception:
                     pass
                 
+                # 2. KILL ALL chromium processes hard
+                try:
+                    subprocess.run(['pkill', '-9', '-f', 'chromium'], timeout=5)
+                except Exception:
+                    pass
+                
+                # 3. Wait and force GC
                 gc.collect()
-                await asyncio.sleep(3)
-                await self.start_browser()
+                await asyncio.sleep(5)
+                
+                # 4. Verify memory actually dropped
+                new_rss = psutil.Process().memory_info().rss / 1024 / 1024
+                logger.info(f"Memory after cleanup: {new_rss:.0f} MB")
+                
+                # 5. Restart playwright from scratch
+                self.playwright = await async_playwright().start()
+                self.browser = await self.playwright.chromium.launch(
+                    headless=self.headless,
+                    args=[
+                        '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
+                        '--disable-extensions', '--disable-background-networking',
+                        '--js-flags=--max-old-space-size=256',
+                        '--renderer-process-limit=1',
+                        '--single-process',
+                    ]
+                )
                 context = await self.browser.new_context()
                 await context.route("**/*", route_handler)
+                
+                logger.info(f"Full restart complete at row {index}")
                 return context
             
             # Only log memory every 50 rows to reduce noise
