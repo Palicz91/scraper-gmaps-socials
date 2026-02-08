@@ -686,25 +686,17 @@ class SocialMediaScraper:
                         pass
                     gc.collect()
                     await asyncio.sleep(0.5)
-                    context = await self.browser.new_context()
-                    await context.route("**/*", route_handler)
+                    try:
+                        context = await self.browser.new_context()
+                        await context.route("**/*", route_handler)
+                    except Exception:
+                        logger.warning(f"Browser dead at row {index + 1}, doing full restart")
+                        context = await self._full_restart(route_handler)
                 
                 # Full browser restart every 200 rows (reduced from 500)
                 if (index + 1) % 200 == 0:
                     logger.info(f"Full browser restart at row {index + 1}")
-                    try:
-                        await context.close()
-                    except Exception:
-                        pass
-                    try:
-                        await self.browser.close()
-                    except Exception:
-                        pass
-                    gc.collect()
-                    await asyncio.sleep(1)
-                    await self.start_browser()
-                    context = await self.browser.new_context()
-                    await context.route("**/*", route_handler)
+                    context = await self._full_restart(route_handler)
                 
                 # Save every 25 rows
                 if (index + 1) % 25 == 0 or (index + 1) == len(df):
@@ -1065,8 +1057,7 @@ class SocialMediaScraper:
                         '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
                         '--disable-extensions', '--disable-background-networking',
                         '--js-flags=--max-old-space-size=256',
-                        '--renderer-process-limit=1',
-                        '--single-process',
+                        '--renderer-process-limit=1', '--single-process',
                     ]
                 )
                 context = await self.browser.new_context()
@@ -1081,6 +1072,38 @@ class SocialMediaScraper:
         except Exception as e:
             logger.warning(f"Error checking memory: {e}")
         
+        return context
+
+    async def _full_restart(self, route_handler):
+        """Full playwright + browser restart with hard cleanup."""
+        try:
+            await self.browser.close()
+        except Exception:
+            pass
+        try:
+            await self.playwright.stop()
+        except Exception:
+            pass
+        try:
+            subprocess.run(['pkill', '-9', '-f', 'chromium'], timeout=5)
+        except Exception:
+            pass
+        gc.collect()
+        await asyncio.sleep(3)
+        
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch(
+            headless=self.headless,
+            args=[
+                '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
+                '--disable-extensions', '--disable-background-networking',
+                '--js-flags=--max-old-space-size=256',
+                '--renderer-process-limit=1', '--single-process',
+            ]
+        )
+        context = await self.browser.new_context()
+        await context.route("**/*", route_handler)
+        logger.info("Full restart complete")
         return context
 
 # Graceful shutdown handling
