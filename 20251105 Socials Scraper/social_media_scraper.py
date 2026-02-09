@@ -857,7 +857,7 @@ class SocialMediaScraper:
                 try:
                     proc = psutil.Process()
                     mid_mem = proc.memory_info().rss + sum(c.memory_info().rss for c in proc.children(recursive=True))
-                    if mid_mem > 500 * 1024 * 1024:
+                    if mid_mem > 1500 * 1024 * 1024:  # 1.5GB
                         logger.warning(f"Memory spike during scrape ({mid_mem // 1024 // 1024} MB), aborting this website")
                         break
                 except Exception:
@@ -1018,7 +1018,7 @@ class SocialMediaScraper:
             children_rss = sum(c.memory_info().rss for c in process.children(recursive=True)) / 1024 / 1024
             total_mb = rss_mb + children_rss
             
-            if total_mb > 800:
+            if total_mb > 2000:  # 2GB
                 logger.warning(f"Memory too high ({total_mb:.0f} MB) at row {index}, forcing full restart")
                 
                 # 1. Close gracefully
