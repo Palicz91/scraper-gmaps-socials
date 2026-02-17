@@ -1,279 +1,257 @@
 """
-Single-place review audit scraper.
-Extracted from get_place_data.py - opens one Google Maps place,
-counts answered vs unanswered reviews.
+Review Audit API Service
+Receives audit requests from Supabase, scrapes review data, sends report email.
+
+Usage:
+  uvicorn audit_service:app --host 0.0.0.0 --port 8000
+
+Endpoints:
+  POST /audit  - Trigger audit for a place (called by Supabase webhook or Edge Function)
+  GET  /health - Health check
 """
 
-import time
-import re
+import os
+import asyncio
 import logging
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from datetime import datetime
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Header
+from pydantic import BaseModel
+from typing import Optional
 
+import resend
+from supabase import create_client
+
+from audit_scraper import run_single_place_audit
+
+# ── Config ──
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+AUDIT_SECRET = os.environ.get("AUDIT_SECRET", "change-me-in-production")
+FROM_EMAIL = os.environ.get("FROM_EMAIL", "Review Manager <reviews@spinix.so>")
+
+# ── Logging ──
+logging.basicConfig(
+    filename="/home/hello/scraper/Scraper/audit_service.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
+# ── Init ──
+app = FastAPI(title="Review Audit Service", version="1.0")
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+resend.api_key = RESEND_API_KEY
 
-def create_driver():
-    options = Options()
-    options.add_argument("--headless=new")
-    options.add_argument("--window-size=1280,1000")
-    options.add_argument("--lang=en")
-    options.add_argument("--ignore-certificate-errors")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--disable-webgl")
-    options.add_argument("--disable-software-rasterizer")
-    options.add_argument("--disable-features=VizDisplayCompositor")
-    options.add_argument("--incognito")
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-plugins")
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
+
+# ── Models ──
+class AuditRequest(BaseModel):
+    id: str
+    email: str
+    place_id: str
+    place_name: str
+    place_address: Optional[str] = ""
+    place_rating: Optional[float] = None
+    place_review_count: Optional[int] = None
+
+
+class WebhookPayload(BaseModel):
+    """Supabase webhook sends this format on INSERT."""
+    type: str = "INSERT"
+    table: str = "review_audit_requests"
+    record: dict = {}
+    old_record: Optional[dict] = None
+
+
+# ── Endpoints ──
+@app.get("/health")
+async def health():
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.post("/audit")
+async def trigger_audit(
+    payload: WebhookPayload,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Called by Supabase webhook on new review_audit_requests insert.
+    Validates auth, then runs scraper in background.
+    """
+    # Auth check
+    if authorization != f"Bearer {AUDIT_SECRET}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    record = payload.record
+    if not record.get("email") or not record.get("place_id"):
+        raise HTTPException(status_code=400, detail="Missing email or place_id")
+
+    # Skip if already processed
+    if record.get("status") != "pending":
+        return {"status": "skipped", "reason": "not pending"}
+
+    audit_req = AuditRequest(
+        id=record["id"],
+        email=record["email"],
+        place_id=record["place_id"],
+        place_name=record.get("place_name", ""),
+        place_address=record.get("place_address", ""),
+        place_rating=record.get("place_rating"),
+        place_review_count=record.get("place_review_count"),
     )
-    driver = webdriver.Chrome(options=options)
-    driver.set_page_load_timeout(30)
-    return driver
+
+    # Update status to processing
+    supabase.table("review_audit_requests").update(
+        {"status": "processing"}
+    ).eq("id", audit_req.id).execute()
+
+    # Run in background so we respond 200 immediately
+    background_tasks.add_task(process_audit, audit_req)
+
+    logger.info(f"Audit queued: {audit_req.place_name} ({audit_req.place_id}) for {audit_req.email}")
+    return {"status": "queued", "place": audit_req.place_name}
 
 
-def accept_google_consent(driver, timeout=3):
+@app.post("/audit/manual")
+async def trigger_audit_manual(
+    req: AuditRequest,
+    background_tasks: BackgroundTasks,
+    authorization: Optional[str] = Header(None),
+):
+    """Manual trigger - for testing or direct API calls."""
+    if authorization != f"Bearer {AUDIT_SECRET}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    background_tasks.add_task(process_audit, req)
+    return {"status": "queued", "place": req.place_name}
+
+
+# ── Background processing ──
+async def process_audit(req: AuditRequest):
+    """Run scraper, update DB, send email."""
     try:
-        if "consent.google" not in driver.current_url and "Before you continue" not in driver.page_source:
-            return False
-        buttons = [
-            "//button[contains(., 'Accept all')]",
-            "//button[contains(., 'Reject all')]",
-            "//button[contains(., 'Accept')]",
-            "//button[contains(., 'I agree')]",
-            "//button[@aria-label='Accept all']",
-            "//form//button[1]",
-        ]
-        for xpath in buttons:
-            try:
-                button = WebDriverWait(driver, timeout).until(
-                    EC.element_to_be_clickable((By.XPATH, xpath))
-                )
-                button.click()
-                time.sleep(2)
-                return True
-            except:
-                continue
-        return False
-    except:
-        return False
+        logger.info(f"Starting audit: {req.place_name} for {req.email}")
 
+        # Build Google Maps URL from place_id
+        maps_url = f"https://www.google.com/maps/place/?q=place_id:{req.place_id}"
 
-def open_reviews_tab(driver):
-    tab_selectors = [
-        "button[aria-label*='Reviews']",
-        "button[aria-label*='review']",
-        "button.hh2c6[data-tab-index='1']",
-    ]
-    for sel in tab_selectors:
-        try:
-            tab = driver.find_element(By.CSS_SELECTOR, sel)
-            tab.click()
-            time.sleep(2)
-            return True
-        except:
-            continue
-    try:
-        review_link = driver.find_element(
-            By.XPATH, '//button[contains(@aria-label, "review")]'
+        # Run the scraper (blocking, so run in thread)
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            run_single_place_audit,
+            maps_url,
+            req.place_id,
         )
-        review_link.click()
-        time.sleep(2)
-        return True
-    except:
-        pass
-    return False
 
+        if not result:
+            logger.error(f"Scraper returned no result for {req.place_name}")
+            supabase.table("review_audit_requests").update(
+                {"status": "failed"}
+            ).eq("id", req.id).execute()
+            return
 
-def scroll_reviews(driver, max_scrolls=50, scroll_pause=1.5):
-    scrollable_selectors = [
-        'div.m6QErb.DxyBCb.kA9KIf.dS8AEf',
-        'div.m6QErb.DxyBCb.kA9KIf',
-        'div.m6QErb',
-    ]
-    scrollable = None
-    for sel in scrollable_selectors:
-        try:
-            scrollable = driver.find_element(By.CSS_SELECTOR, sel)
-            break
-        except:
-            continue
-
-    if not scrollable:
-        logger.warning("Could not find scrollable review panel")
-        return
-
-    last_review_count = 0
-    stale_count = 0
-
-    for scroll_num in range(max_scrolls):
-        driver.execute_script(
-            "arguments[0].scrollTop = arguments[0].scrollHeight",
-            scrollable
+        logger.info(
+            f"Audit complete: {req.place_name} - "
+            f"{result['reviews_loaded']} loaded, "
+            f"{result['unanswered']} unanswered, "
+            f"{result['unanswered_pct']}%"
         )
-        time.sleep(scroll_pause)
 
-        reviews = driver.find_elements(By.CSS_SELECTOR, 'div[data-review-id]')
-        current_count = len(reviews)
+        # Update Supabase with real data
+        supabase.table("review_audit_requests").update({
+            "status": "completed",
+            "reviews_loaded": result["reviews_loaded"],
+            "reviews_answered": result["answered"],
+            "reviews_unanswered": result["unanswered"],
+            "reviews_unanswered_pct": result["unanswered_pct"],
+            "completed_at": datetime.utcnow().isoformat(),
+        }).eq("id", req.id).execute()
 
-        if current_count == last_review_count:
-            stale_count += 1
-            if stale_count >= 3:
-                logger.info(f"Finished scrolling. Total reviews loaded: {current_count}")
-                return
-        else:
-            stale_count = 0
-            last_review_count = current_count
+        # Send email
+        send_audit_email(req, result)
 
-        if scroll_num % 10 == 0:
-            logger.info(f"Scrolling... {current_count} reviews loaded")
-
-    logger.info(f"Max scrolls reached. Reviews loaded: {last_review_count}")
-
-
-def count_unanswered_reviews(driver):
-    result = {
-        'reviews_loaded': 0,
-        'answered': 0,
-        'unanswered': 0,
-        'unanswered_pct': 0,
-    }
-
-    try:
-        review_elements = driver.find_elements(By.CSS_SELECTOR, 'div[data-review-id]')
-        total = len(review_elements)
-        result['reviews_loaded'] = total
-
-        if total == 0:
-            return result
-
-        answered = 0
-        for review_el in review_elements:
-            try:
-                owner_responses = review_el.find_elements(By.CSS_SELECTOR, 'div.CDe7pd')
-                if not owner_responses:
-                    owner_responses = review_el.find_elements(
-                        By.XPATH, './/span[contains(text(), "Response from")]'
-                    )
-                if owner_responses:
-                    answered += 1
-            except:
-                continue
-
-        unanswered = total - answered
-        result['answered'] = answered
-        result['unanswered'] = unanswered
-        result['unanswered_pct'] = round((unanswered / total) * 100, 1) if total > 0 else 0
+        logger.info(f"Audit email sent to {req.email} for {req.place_name}")
 
     except Exception as e:
-        logger.error(f"Error counting reviews: {e}")
-
-    return result
-
-
-def run_single_place_audit(maps_url: str, place_id: str, max_retries: int = 2) -> dict | None:
-    """
-    Run audit on a single Google Maps place.
-    Returns dict with reviews_loaded, answered, unanswered, unanswered_pct
-    or None on failure.
-    """
-    # Build a search URL from place_id that reliably opens the place
-    search_url = f"https://www.google.com/maps/search/?api=1&query=Google&query_place_id={place_id}"
-
-    for attempt in range(max_retries):
-        driver = None
+        logger.error(f"Audit failed for {req.place_name}: {e}", exc_info=True)
         try:
-            driver = create_driver()
-            logger.info(f"Attempt {attempt + 1}: Loading {search_url}")
-
-            driver.get(search_url)
-            accept_google_consent(driver)
-
-            # Wait for the place page to load
-            WebDriverWait(driver, 15).until(
-                lambda d: "maps" in d.current_url
-                    and len(d.find_elements(By.CSS_SELECTOR, "h1")) > 0
-                    and "Before you continue" not in d.page_source
-            )
-            time.sleep(3)
-
-            # Get total review count from the page
-            total_reviews = 0
-            try:
-                from scrapy import Selector
-                selector = Selector(text=driver.page_source)
-                reviews_text = selector.xpath(
-                    '//span[contains(@aria-label, "review")]/@aria-label'
-                ).get()
-                if reviews_text:
-                    match = re.search(r'([\d,]+)', reviews_text)
-                    if match:
-                        total_reviews = int(match.group(1).replace(',', ''))
-            except:
-                pass
-
-            logger.info(f"Place loaded. Total reviews on page: {total_reviews}")
-
-            # Decide scroll depth based on review count
-            if total_reviews > 500:
-                max_scrolls = 30  # ~200 reviews
-            elif total_reviews > 200:
-                max_scrolls = 50  # ~300 reviews
-            else:
-                max_scrolls = 80  # Try to get all
-
-            # Open reviews tab and scroll
-            if open_reviews_tab(driver):
-                time.sleep(2)
-                scroll_reviews(driver, max_scrolls=max_scrolls)
-                result = count_unanswered_reviews(driver)
-                result['total_reviews_on_page'] = total_reviews
-
-                logger.info(
-                    f"Audit result: {result['reviews_loaded']} loaded, "
-                    f"{result['unanswered']} unanswered ({result['unanswered_pct']}%)"
-                )
-                return result
-            else:
-                logger.warning("Could not open reviews tab")
-
-        except Exception as e:
-            logger.error(f"Attempt {attempt + 1} failed: {e}", exc_info=True)
-            if attempt < max_retries - 1:
-                time.sleep(3)
-
-        finally:
-            if driver:
-                try:
-                    driver.quit()
-                except:
-                    pass
-
-    logger.error(f"All attempts failed for place_id: {place_id}")
-    return None
+            supabase.table("review_audit_requests").update(
+                {"status": "failed"}
+            ).eq("id", req.id).execute()
+        except:
+            pass
 
 
-# ── CLI test ──
-if __name__ == "__main__":
-    import sys
-    test_place_id = sys.argv[1] if len(sys.argv) > 1 else "ChIJM1KEgCTcQUcRnr7f9tjnbmo"
-    print(f"Testing audit for place_id: {test_place_id}")
-    result = run_single_place_audit("", test_place_id)
-    if result:
-        print(f"\nResult:")
-        for k, v in result.items():
-            print(f"  {k}: {v}")
-    else:
-        print("Audit failed.")
+def send_audit_email(req: AuditRequest, result: dict):
+    """Send the audit report email via Resend."""
+    total = result["reviews_loaded"]
+    unanswered = result["unanswered"]
+    answered = result["answered"]
+    unanswered_pct = result["unanswered_pct"]
+
+    html = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #1a1a2e; font-size: 24px; margin-bottom: 5px;">Your Review Audit Report</h1>
+        <p style="color: #666; font-size: 14px;">{req.place_name}</p>
+        <p style="color: #999; font-size: 12px;">{req.place_address}</p>
+      </div>
+
+      <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-around; text-align: center;">
+          <div>
+            <div style="font-size: 32px; font-weight: 700; color: #1a1a2e;">{total}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">Reviews analyzed</div>
+          </div>
+          <div>
+            <div style="font-size: 32px; font-weight: 700; color: #10b981;">{answered}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">Answered</div>
+          </div>
+          <div>
+            <div style="font-size: 32px; font-weight: 700; color: #ef4444;">{unanswered}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">Unanswered</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <p style="color: #dc2626; font-weight: 600; margin: 0 0 8px 0; font-size: 16px;">
+          {unanswered_pct}% of your reviews have no reply
+        </p>
+        <p style="color: #666; margin: 0; font-size: 14px; line-height: 1.5;">
+          Every unanswered review, especially negative ones, tells potential guests you don't care.
+          Responding to reviews can improve your rating perception and bring back lost customers.
+        </p>
+      </div>
+
+      <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <p style="color: #059669; font-weight: 600; margin: 0 0 8px 0; font-size: 16px;">
+          We'll reply to your first 10 reviews for free
+        </p>
+        <p style="color: #666; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5;">
+          Our AI drafts replies in your tone and language. You approve each one before it goes live.
+          No commitment, no credit card needed.
+        </p>
+        <a href="https://spinix.so/review-manager#pricing-section"
+           style="display: inline-block; background: #10b981; color: white; padding: 12px 24px;
+                  border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+          Get started free
+        </a>
+      </div>
+
+      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="color: #999; font-size: 12px;">
+          Sent by <a href="https://spinix.so" style="color: #10b981;">SpiniX</a> Review Manager
+        </p>
+      </div>
+    </div>
+    """
+
+    resend.Emails.send({
+        "from": FROM_EMAIL,
+        "to": [req.email],
+        "subject": f"Review Audit: {req.place_name} - {unanswered} unanswered reviews found",
+        "html": html,
+    })
