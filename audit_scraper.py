@@ -80,14 +80,12 @@ def accept_google_consent(driver, timeout=5):
 
 def open_reviews_tab(driver):
     """Open the reviews tab - works with any language."""
-    # Method 1: Try known tab indices (reviews is usually index 1 or 2)
     for tab_index in ["1", "2", "3"]:
         try:
             tab = driver.find_element(
                 By.CSS_SELECTOR, f'button.hh2c6[data-tab-index="{tab_index}"]'
             )
             label = tab.get_attribute("aria-label") or ""
-            # Check if this is the reviews tab in any language
             review_keywords = ["review", "rezension", "avis", "reseñ", "recens", "értékelés"]
             if any(kw in label.lower() for kw in review_keywords):
                 tab.click()
@@ -97,7 +95,6 @@ def open_reviews_tab(driver):
         except:
             continue
 
-    # Method 2: Find any button with review-like aria-label
     try:
         buttons = driver.find_elements(By.CSS_SELECTOR, "button[aria-label]")
         for btn in buttons:
@@ -126,7 +123,6 @@ def scroll_reviews(driver, max_scrolls=50, scroll_pause=1.5):
         try:
             elements = driver.find_elements(By.CSS_SELECTOR, sel)
             for el in elements:
-                # Find the one with actual height (the review panel)
                 height = el.get_attribute("scrollHeight")
                 if height and int(height) > 200:
                     scrollable = el
@@ -150,7 +146,6 @@ def scroll_reviews(driver, max_scrolls=50, scroll_pause=1.5):
         )
         time.sleep(scroll_pause)
 
-        # Try multiple selectors for review elements
         reviews = find_review_elements(driver)
         current_count = len(reviews)
 
@@ -204,7 +199,6 @@ def count_unanswered_reviews(driver):
         answered = 0
         for review_el in review_elements:
             try:
-                # Check for owner response - multiple selectors
                 owner_responses = review_el.find_elements(By.CSS_SELECTOR, 'div.CDe7pd')
                 if not owner_responses:
                     owner_responses = review_el.find_elements(
@@ -215,7 +209,6 @@ def count_unanswered_reviews(driver):
                         By.XPATH, './/span[contains(text(), "Antwort von")]'
                     )
                 if not owner_responses:
-                    # Generic: look for response container class
                     owner_responses = review_el.find_elements(By.CSS_SELECTOR, 'div.d6SCIc')
                 if owner_responses:
                     answered += 1
@@ -239,7 +232,6 @@ def run_single_place_audit(maps_url: str, place_id: str, max_retries: int = 2) -
     Returns dict with reviews_loaded, answered, unanswered, unanswered_pct
     or None on failure.
     """
-    # Force English with hl=en
     search_url = f"https://www.google.com/maps/search/?api=1&query=Google&query_place_id={place_id}&hl=en"
 
     for attempt in range(max_retries):
@@ -253,23 +245,19 @@ def run_single_place_audit(maps_url: str, place_id: str, max_retries: int = 2) -
             accept_google_consent(driver)
             time.sleep(3)
 
-            # If redirected to consent, load again
             if "consent.google" in driver.current_url:
                 driver.get(search_url)
                 time.sleep(5)
 
-            # Wait for the place page to load
             WebDriverWait(driver, 15).until(
                 lambda d: len(d.find_elements(By.CSS_SELECTOR, "h1")) > 0
             )
             time.sleep(3)
 
-            # Get place name
             h1_elements = driver.find_elements(By.CSS_SELECTOR, "h1")
             place_name = h1_elements[0].text if h1_elements else "Unknown"
             logger.info(f"Place loaded: {place_name}")
 
-            # Get total review count from the page
             total_reviews = 0
             try:
                 from scrapy import Selector
@@ -286,7 +274,6 @@ def run_single_place_audit(maps_url: str, place_id: str, max_retries: int = 2) -
 
             logger.info(f"Total reviews on page: {total_reviews}")
 
-            # Decide scroll depth based on review count
             if total_reviews > 500:
                 max_scrolls = 30
             elif total_reviews > 200:
@@ -294,11 +281,8 @@ def run_single_place_audit(maps_url: str, place_id: str, max_retries: int = 2) -
             else:
                 max_scrolls = 80
 
-            # Open reviews tab and scroll
             if open_reviews_tab(driver):
                 time.sleep(3)
-
-                # Verify we're on reviews - check for review elements after a moment
                 scroll_reviews(driver, max_scrolls=max_scrolls)
                 result = count_unanswered_reviews(driver)
                 result['total_reviews_on_page'] = total_reviews
@@ -328,7 +312,6 @@ def run_single_place_audit(maps_url: str, place_id: str, max_retries: int = 2) -
     return None
 
 
-# ── CLI test ──
 if __name__ == "__main__":
     import sys
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -341,7 +324,3 @@ if __name__ == "__main__":
             print(f"  {k}: {v}")
     else:
         print("Audit failed.")
-        "to": [req.email],
-        "subject": f"Review Audit: {req.place_name} - {unanswered} unanswered reviews found",
-        "html": html,
-    })
