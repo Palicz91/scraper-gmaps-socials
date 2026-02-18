@@ -53,3 +53,18 @@ def pipeline_summary(total_places: int = 0, social_found: int = 0, duration_sec:
         f"⏱ Idő: {mins:.1f} perc"
     )
     notify(msg)
+
+def send_file(filepath: str, caption: str = "") -> bool:
+    """Send a file via Telegram. Returns True if successful."""
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
+    try:
+        with open(filepath, "rb") as f:
+            payload = {"chat_id": TELEGRAM_CHAT_ID}
+            if caption:
+                payload["caption"] = caption
+                payload["parse_mode"] = "HTML"
+            r = requests.post(url, data=payload, files={"document": f}, timeout=30)
+            return r.status_code == 200
+    except Exception as e:
+        print(f"⚠️ Telegram file send failed: {e}")
+        return False
