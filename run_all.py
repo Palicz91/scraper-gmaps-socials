@@ -171,4 +171,16 @@ if __name__ == "__main__":
 
     duration = time.time() - pipeline_start
     pipeline_summary(total_places, social_found, duration)
+
+    # Output fájlok elküldése Telegramon
+    from telegram_notify import send_file
+    output_files = [
+        GMAPS_DIR / "places_data.csv",
+        SOCIAL_DIR / "output.csv",
+        SOCIAL_DIR / "output_cleared.csv",
+    ]
+    for f in output_files:
+        if f.exists() and f.stat().st_size > 0:
+            send_file(str(f), f"📎 {f.name}")
+
     print("\n🏁 Kész.")
