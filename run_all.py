@@ -127,13 +127,8 @@ if __name__ == "__main__":
     notify("🟢 <b>Pipeline indult</b>")
 
     # Cleanup
-    answer = input("\n🧹 Töröljem az előző futás fájljait? (i/n): ").strip().lower()
-    if answer in ("i", "y", "yes", "igen"):
-        print("\nTörlés...")
-        cleanup_artifacts()
-    else:
-        print("ℹ️  Törlés kihagyva.")
-        logging.info("Cleanup kihagyva user kérésére.")
+    print("\n🧹 Cleanup...")
+    cleanup_artifacts()
 
     total_places = 0
     social_found = 0
