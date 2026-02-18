@@ -6,7 +6,7 @@ Usage:
   uvicorn audit_service:app --host 0.0.0.0 --port 8000
 
 Endpoints:
-  POST /audit  - Trigger audit for a place (called by Supabase webhook or Edge Function)
+  POST /audit  - Trigger audit for a place (called by Supabase webhook)
   GET  /health - Health check
 """
 
@@ -23,14 +23,12 @@ from supabase import create_client
 
 from audit_scraper import run_single_place_audit
 
-# ── Config ──
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 AUDIT_SECRET = os.environ.get("AUDIT_SECRET", "change-me-in-production")
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "Review Manager <reviews@spinix.so>")
 
-# ── Logging ──
 logging.basicConfig(
     filename="/home/hello/scraper/Scraper/audit_service.log",
     level=logging.INFO,
@@ -38,13 +36,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ── Init ──
 app = FastAPI(title="Review Audit Service", version="1.0")
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 resend.api_key = RESEND_API_KEY
 
 
-# ── Models ──
 class AuditRequest(BaseModel):
     id: str
     email: str
@@ -56,14 +52,12 @@ class AuditRequest(BaseModel):
 
 
 class WebhookPayload(BaseModel):
-    """Supabase webhook sends this format on INSERT."""
     type: str = "INSERT"
     table: str = "review_audit_requests"
     record: dict = {}
     old_record: Optional[dict] = None
 
 
-# ── Endpoints ──
 @app.get("/health")
 async def health():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
@@ -75,11 +69,6 @@ async def trigger_audit(
     background_tasks: BackgroundTasks,
     authorization: Optional[str] = Header(None),
 ):
-    """
-    Called by Supabase webhook on new review_audit_requests insert.
-    Validates auth, then runs scraper in background.
-    """
-    # Auth check
     if authorization != f"Bearer {AUDIT_SECRET}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -87,7 +76,6 @@ async def trigger_audit(
     if not record.get("email") or not record.get("place_id"):
         raise HTTPException(status_code=400, detail="Missing email or place_id")
 
-    # Skip if already processed
     if record.get("status") != "pending":
         return {"status": "skipped", "reason": "not pending"}
 
@@ -101,12 +89,10 @@ async def trigger_audit(
         place_review_count=record.get("place_review_count"),
     )
 
-    # Update status to processing
     supabase.table("review_audit_requests").update(
         {"status": "processing"}
     ).eq("id", audit_req.id).execute()
 
-    # Run in background so we respond 200 immediately
     background_tasks.add_task(process_audit, audit_req)
 
     logger.info(f"Audit queued: {audit_req.place_name} ({audit_req.place_id}) for {audit_req.email}")
@@ -119,7 +105,6 @@ async def trigger_audit_manual(
     background_tasks: BackgroundTasks,
     authorization: Optional[str] = Header(None),
 ):
-    """Manual trigger - for testing or direct API calls."""
     if authorization != f"Bearer {AUDIT_SECRET}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -127,16 +112,12 @@ async def trigger_audit_manual(
     return {"status": "queued", "place": req.place_name}
 
 
-# ── Background processing ──
 async def process_audit(req: AuditRequest):
-    """Run scraper, update DB, send email."""
     try:
         logger.info(f"Starting audit: {req.place_name} for {req.email}")
 
-        # Build Google Maps URL from place_id
         maps_url = f"https://www.google.com/maps/place/?q=place_id:{req.place_id}"
 
-        # Run the scraper (blocking, so run in thread)
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
@@ -159,7 +140,6 @@ async def process_audit(req: AuditRequest):
             f"{result['unanswered_pct']}%"
         )
 
-        # Update Supabase with real data
         supabase.table("review_audit_requests").update({
             "status": "completed",
             "reviews_loaded": result["reviews_loaded"],
@@ -169,7 +149,6 @@ async def process_audit(req: AuditRequest):
             "completed_at": datetime.utcnow().isoformat(),
         }).eq("id", req.id).execute()
 
-        # Send email
         send_audit_email(req, result)
 
         logger.info(f"Audit email sent to {req.email} for {req.place_name}")
@@ -185,7 +164,6 @@ async def process_audit(req: AuditRequest):
 
 
 def send_audit_email(req: AuditRequest, result: dict):
-    """Send the audit report email via Resend."""
     total = result["reviews_loaded"]
     unanswered = result["unanswered"]
     answered = result["answered"]
