@@ -116,14 +116,14 @@ async def process_audit(req: AuditRequest):
     try:
         logger.info(f"Starting audit: {req.place_name} for {req.email}")
 
-        maps_url = f"https://www.google.com/maps/place/?q=place_id:{req.place_id}"
-
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
             run_single_place_audit,
-            maps_url,
+            "",                  # maps_url (not used, we search by name)
             req.place_id,
+            req.place_name,
+            req.place_address,
         )
 
         if not result:
