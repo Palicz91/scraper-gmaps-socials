@@ -101,7 +101,14 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     result = subprocess.run(["tmux", "has-session", "-t", "scraper"], capture_output=True)
     if result.returncode == 0:
-        await update.message.reply_text("🟢 Pipeline fut.")
+        # Grab last 10 lines from tmux pane
+        log = subprocess.run(
+            ["tmux", "capture-pane", "-t", "scraper", "-p", "-S", "-10"],
+            capture_output=True, text=True
+        )
+        lines = log.stdout.strip()
+        msg = "🟢 Pipeline fut.\n\n<pre>" + (lines[-3000:] if lines else "Nincs log") + "</pre>"
+        await update.message.reply_text(msg, parse_mode="HTML")
     else:
         await update.message.reply_text("⚪ Nincs futó pipeline.")
 
