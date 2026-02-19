@@ -3,6 +3,7 @@ import csv
 import re
 import logging
 import os
+import random
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -16,6 +17,32 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+# =============================================
+# ANTI-RATE-LIMIT CONFIG
+# =============================================
+USER_AGENTS = [
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+]
+
+# Rate limit tracking
+consecutive_empty_count = 0
+RATE_LIMIT_THRESHOLD = 5       # After 5 consecutive empty ratings, assume rate limited
+RATE_LIMIT_COOLDOWN = 120      # 2 min cooldown when rate limited
+BATCH_SIZE = 200               # Longer pause every N links
+BATCH_PAUSE = 300              # 5 min pause between batches
+MIN_DELAY = 5                  # Min seconds between requests
+MAX_DELAY = 12                 # Max seconds between requests
+DRIVER_RESTART_EVERY = 100     # New browser (new user-agent) every N links
 
 
 def create_driver():
@@ -38,15 +65,32 @@ def create_driver():
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-plugins")
 
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    )
+    ua = random.choice(USER_AGENTS)
+    options.add_argument(f"user-agent={ua}")
+    logging.info(f"Using user-agent: {ua[:50]}...")
 
     driver = webdriver.Chrome(options=options)
     driver.set_page_load_timeout(30)
+
+    # Mask webdriver detection
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            window.navigator.chrome = {runtime: {}};
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+        """
+    })
+
     return driver
+
+
+def random_delay(min_sec=None, max_sec=None):
+    """Sleep for a random duration to appear more human."""
+    min_s = min_sec or MIN_DELAY
+    max_s = max_sec or MAX_DELAY
+    delay = random.uniform(min_s, max_s)
+    time.sleep(delay)
 
 
 def read_links_from_file(filename="links.txt"):
@@ -119,9 +163,8 @@ def scroll_reviews(driver, max_scrolls=50, scroll_pause=1.5):
     Scroll through all reviews in the review panel.
     Returns when no new reviews are loading.
     """
-    # A reviews panel scrollable container
     scrollable_selectors = [
-        'div.m6QErb.DxyBCb.kA9KIf.dS8AEf',  # Reviews panel scrollable div
+        'div.m6QErb.DxyBCb.kA9KIf.dS8AEf',
         'div.m6QErb.DxyBCb.kA9KIf',
         'div.m6QErb',
     ]
@@ -142,14 +185,12 @@ def scroll_reviews(driver, max_scrolls=50, scroll_pause=1.5):
     stale_count = 0
 
     for scroll_num in range(max_scrolls):
-        # Scroll down
         driver.execute_script(
             "arguments[0].scrollTop = arguments[0].scrollHeight",
             scrollable
         )
         time.sleep(scroll_pause)
 
-        # Count current reviews
         reviews = driver.find_elements(
             By.CSS_SELECTOR, 'div[data-review-id]'
         )
@@ -158,7 +199,6 @@ def scroll_reviews(driver, max_scrolls=50, scroll_pause=1.5):
         if current_count == last_review_count:
             stale_count += 1
             if stale_count >= 3:
-                # No new reviews loaded after 3 scrolls
                 print(f"  📜 Finished scrolling. Total reviews loaded: {current_count}")
                 return
         else:
@@ -174,15 +214,6 @@ def scroll_reviews(driver, max_scrolls=50, scroll_pause=1.5):
 def count_unanswered_reviews(driver, max_reviews_to_check=None):
     """
     Count total reviews and unanswered reviews on the current page.
-    Assumes we're already on the reviews tab.
-    
-    Args:
-        max_reviews_to_check: If set, limits how many reviews to scroll through.
-                              None = scroll all (can be slow for 500+ review places).
-                              Set to e.g. 100 for faster but approximate results.
-    
-    Returns:
-        dict with total_reviews, answered, unanswered, unanswered_pct
     """
     result = {
         'total_reviews_loaded': 0,
@@ -192,7 +223,6 @@ def count_unanswered_reviews(driver, max_reviews_to_check=None):
     }
 
     try:
-        # Find all review containers
         review_elements = driver.find_elements(By.CSS_SELECTOR, 'div[data-review-id]')
         total = len(review_elements)
         result['total_reviews_loaded'] = total
@@ -203,22 +233,18 @@ def count_unanswered_reviews(driver, max_reviews_to_check=None):
         answered = 0
         for review_el in review_elements:
             try:
-                # Check if there's an owner response within this review
-                # Google Maps shows "Response from the owner" in a specific div
                 owner_responses = review_el.find_elements(
-                    By.CSS_SELECTOR, 'div.CDe7pd'  # Owner response container
+                    By.CSS_SELECTOR, 'div.CDe7pd'
                 )
                 if not owner_responses:
-                    # Alternative selector
                     owner_responses = review_el.find_elements(
                         By.XPATH, './/span[contains(text(), "Response from")]'
                     )
                 if not owner_responses:
-                    # Yet another pattern
                     owner_responses = review_el.find_elements(
                         By.XPATH, './/div[contains(@class, "owner-response")]'
                     )
-                
+
                 if owner_responses:
                     answered += 1
             except:
@@ -242,13 +268,12 @@ def open_reviews_tab(driver):
     Returns True if successful.
     """
     try:
-        # Method 1: Click the reviews tab button
         tab_selectors = [
             "button[aria-label*='Reviews']",
             "button[aria-label*='review']",
-            "button.hh2c6[data-tab-index='1']",  # Usually the 2nd tab
+            "button.hh2c6[data-tab-index='1']",
         ]
-        
+
         for sel in tab_selectors:
             try:
                 tab = driver.find_element(By.CSS_SELECTOR, sel)
@@ -258,7 +283,6 @@ def open_reviews_tab(driver):
             except:
                 continue
 
-        # Method 2: Click the review count text (e.g. "1,234 reviews")
         try:
             review_link = driver.find_element(
                 By.XPATH, '//button[contains(@aria-label, "review")]'
@@ -269,7 +293,6 @@ def open_reviews_tab(driver):
         except:
             pass
 
-        # Method 3: Click "More reviews" or similar
         try:
             more_reviews = driver.find_element(
                 By.XPATH, '//span[contains(text(), "review")]/..'
@@ -289,18 +312,14 @@ def open_reviews_tab(driver):
 
 
 def sort_reviews_newest(driver):
-    """
-    Sort reviews by newest first (optional, helps see recent unanswered ones).
-    """
+    """Sort reviews by newest first."""
     try:
-        # Click sort button
         sort_button = driver.find_element(
             By.CSS_SELECTOR, 'button[aria-label="Sort reviews"]'
         )
         sort_button.click()
         time.sleep(1)
 
-        # Click "Newest"
         newest_option = driver.find_element(
             By.XPATH, '//div[@role="menuitemradio" and @data-index="1"]'
         )
@@ -314,12 +333,10 @@ def sort_reviews_newest(driver):
 def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_scrolls=50, min_reviews_for_analysis=100):
     """
     Extract all place data from Google Maps page, including unanswered review count.
-    
-    Args:
-        scrape_reviews: If True, also counts unanswered reviews (slower but more data).
-        max_review_scrolls: How many times to scroll the review panel.
-        min_reviews_for_analysis: Skip review analysis for places below this threshold.
+    Uses both Selenium and Scrapy selectors for maximum reliability.
     """
+    global consecutive_empty_count
+
     print(f"Processing: {url}")
     logging.info(f"Processing: {url}")
 
@@ -335,7 +352,8 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
                     and "Before you continue" not in d.page_source
             )
 
-            time.sleep(3)
+            # Randomized wait to appear more human
+            time.sleep(random.uniform(2.5, 4.5))
 
             item = dict()
             page_source = driver.page_source
@@ -351,7 +369,7 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
             item['lat'] = lat
             item['lng'] = lng
 
-            # Rating
+            # Rating - use Selenium (JS-rendered content)
             try:
                 rating_elem = driver.find_element(By.CSS_SELECTOR, 'div[role="img"][aria-label*="star"]')
                 aria = rating_elem.get_attribute('aria-label')
@@ -360,13 +378,38 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
             except:
                 item['rating'] = ''
 
-            # Total review count (from the main page, before scrolling)
-            reviews_text = selector.xpath('//span[contains(@aria-label, "review")]/@aria-label').get()
-            if reviews_text:
-                reviews_match = re.search(r'([\d,]+)', reviews_text)
-                item['reviews'] = reviews_match.group(1).replace(',', '') if reviews_match else ''
+            # Total review count - use Selenium instead of Scrapy (JS-rendered)
+            item['reviews'] = ''
+            try:
+                review_el = driver.find_element(By.CSS_SELECTOR, 'span[aria-label*="review"]')
+                aria = review_el.get_attribute('aria-label')
+                reviews_match = re.search(r'([\d,]+)', aria)
+                if reviews_match:
+                    item['reviews'] = reviews_match.group(1).replace(',', '')
+            except:
+                try:
+                    review_el = driver.find_element(By.XPATH, '//button[contains(@aria-label, "review")]')
+                    aria = review_el.get_attribute('aria-label')
+                    reviews_match = re.search(r'([\d,]+)', aria)
+                    if reviews_match:
+                        item['reviews'] = reviews_match.group(1).replace(',', '')
+                except:
+                    pass
+
+            logging.info(f"Rating: '{item['rating']}', Reviews: '{item['reviews']}' for {item['name']}")
+
+            # --- RATE LIMIT DETECTION ---
+            if item['rating'] == '' and item['name'] != '':
+                consecutive_empty_count += 1
+                logging.warning(f"Empty rating for {item['name']} (consecutive: {consecutive_empty_count})")
+                if consecutive_empty_count >= RATE_LIMIT_THRESHOLD:
+                    print(f"  🚨 Rate limit detected! {consecutive_empty_count} consecutive empty ratings. Cooling down {RATE_LIMIT_COOLDOWN}s...")
+                    logging.warning(f"Rate limit cooldown triggered: {RATE_LIMIT_COOLDOWN}s")
+                    time.sleep(RATE_LIMIT_COOLDOWN)
+                    consecutive_empty_count = 0
+                    return "RATE_LIMITED"
             else:
-                item['reviews'] = ''
+                consecutive_empty_count = 0
 
             try:
                 item['address'] = selector.css('button[data-item-id="address"] ::text').extract()[-1]
@@ -379,7 +422,7 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
             item['plus_code'] = selector.css('button[data-tooltip="Copy plus code"] ::attr(aria-label)').extract_first('')
 
             # ============================
-            # REVIEW ANALYSIS (new feature)
+            # REVIEW ANALYSIS
             # ============================
             item['reviews_loaded'] = ''
             item['reviews_answered'] = ''
@@ -388,32 +431,22 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
 
             if scrape_reviews and item.get('reviews') and int(item.get('reviews', '0') or '0') > 0:
                 total_reviews = int(item['reviews'])
-                
-                # Skip review analysis for small places (not worth the outreach)
+
                 if total_reviews < min_reviews_for_analysis:
                     print(f"  ⏭️  Skipping review analysis ({total_reviews} < {min_reviews_for_analysis} threshold)")
                 else:
                     print(f"  📊 Analyzing reviews ({total_reviews} total)...")
 
-                    # Skip review scrolling for places with 1000+ reviews (too slow)
-                    # You can adjust this threshold
                     if total_reviews > 500:
                         print(f"  ⚡ {total_reviews} reviews is a lot, limiting scroll to ~200")
-                        effective_scrolls = 30  # ~200 reviews
+                        effective_scrolls = 30
                     else:
                         effective_scrolls = max_review_scrolls
 
-                    # Open reviews tab
                     if open_reviews_tab(driver):
                         time.sleep(2)
-                        
-                        # Optional: sort by newest to see recent unanswered ones
-                        # sort_reviews_newest(driver)
-                        
-                        # Scroll to load reviews
                         scroll_reviews(driver, max_scrolls=effective_scrolls)
 
-                        # Count answered vs unanswered
                         review_stats = count_unanswered_reviews(driver)
                         item['reviews_loaded'] = review_stats['total_reviews_loaded']
                         item['reviews_answered'] = review_stats['answered']
@@ -454,7 +487,6 @@ def save_single_record_to_csv(record, filename="places_data.csv"):
     fieldnames = [
         'name', 'url', 'category', 'website', 'phone', 'lat', 'lng',
         'reviews', 'rating', 'address', 'located_in', 'plus_code',
-        # New review analysis fields
         'reviews_loaded', 'reviews_answered', 'reviews_unanswered', 'reviews_unanswered_pct'
     ]
 
@@ -489,15 +521,17 @@ def save_last_processed_index(index):
 
 def main():
     """Main function to process all links and extract data."""
-    print("Starting Google Maps scraper with review analysis...")
+    global consecutive_empty_count
+
+    print("Starting Google Maps scraper with anti-rate-limit measures...")
     print("=" * 60)
 
     # =============================================
-    # CONFIG - adjust these for speed vs completeness
+    # CONFIG
     # =============================================
-    SCRAPE_REVIEWS = True        # Set False to skip review analysis (faster)
-    MAX_REVIEW_SCROLLS = 50      # More scrolls = more reviews loaded, but slower
-    MIN_REVIEWS_FOR_ANALYSIS = 100  # Skip review analysis for places with fewer reviews
+    SCRAPE_REVIEWS = True
+    MAX_REVIEW_SCROLLS = 50
+    MIN_REVIEWS_FOR_ANALYSIS = 100
     OUTPUT_FILE = "places_data.csv"
     # =============================================
 
@@ -523,15 +557,23 @@ def main():
     for i, link in enumerate(links[start_index:], start=start_index + 1):
         print(f"\n--- Processing link {i}/{len(links)} ---")
 
-        # Preventive restart every 50 links
-        if i % 50 == 0:
+        # Batch pause every BATCH_SIZE links
+        if i > 1 and (i - 1) % BATCH_SIZE == 0:
+            pause = BATCH_PAUSE + random.randint(0, 60)
+            print(f"⏸️  Batch pause: {pause}s after {i-1} links...")
+            logging.info(f"Batch pause: {pause}s after {i-1} links")
+            time.sleep(pause)
+
+        # Preventive driver restart every DRIVER_RESTART_EVERY links (new user-agent)
+        if i > 1 and (i - 1) % DRIVER_RESTART_EVERY == 0:
             try:
                 driver.quit()
             except:
                 pass
-            time.sleep(1)
+            time.sleep(random.uniform(3, 8))
             driver = create_driver()
-            print("🔁 Preventive browser restart")
+            consecutive_empty_count = 0
+            print(f"🔁 Preventive browser restart (new user-agent)")
 
         place_data = get_place_data(
             driver, link,
@@ -539,6 +581,42 @@ def main():
             max_review_scrolls=MAX_REVIEW_SCROLLS,
             min_reviews_for_analysis=MIN_REVIEWS_FOR_ANALYSIS
         )
+
+        # Rate limit handling - restart driver and retry
+        if place_data == "RATE_LIMITED":
+            try:
+                driver.quit()
+            except:
+                pass
+            time.sleep(random.uniform(5, 10))
+            driver = create_driver()
+            consecutive_empty_count = 0
+            print("🔄 Browser restarted after rate limit cooldown")
+
+            # Retry the same link
+            place_data = get_place_data(
+                driver, link,
+                scrape_reviews=SCRAPE_REVIEWS,
+                max_review_scrolls=MAX_REVIEW_SCROLLS,
+                min_reviews_for_analysis=MIN_REVIEWS_FOR_ANALYSIS
+            )
+            if place_data == "RATE_LIMITED":
+                print(f"  🚨 Still rate limited after retry, longer cooldown...")
+                logging.warning("Double rate limit, extended cooldown 600s")
+                time.sleep(600)
+                try:
+                    driver.quit()
+                except:
+                    pass
+                driver = create_driver()
+                consecutive_empty_count = 0
+
+                place_data = get_place_data(
+                    driver, link,
+                    scrape_reviews=SCRAPE_REVIEWS,
+                    max_review_scrolls=MAX_REVIEW_SCROLLS,
+                    min_reviews_for_analysis=MIN_REVIEWS_FOR_ANALYSIS
+                )
 
         # Crash handling
         if place_data == "BROWSER_CRASHED":
@@ -568,7 +646,7 @@ def main():
                 driver = create_driver()
                 continue
 
-        if place_data and place_data != "BROWSER_CRASHED":
+        if place_data and place_data not in ("BROWSER_CRASHED", "RATE_LIMITED"):
             save_single_record_to_csv(place_data, OUTPUT_FILE)
             processed_count += 1
             print(f"Progress: {processed_count} places processed successfully")
@@ -578,6 +656,9 @@ def main():
         if i % 5 == 0:
             save_last_processed_index(i)
             logging.info(f"Progress saved at link {i}/{len(links)}")
+
+        # Random delay between requests
+        random_delay()
 
     try:
         driver.quit()
