@@ -1,6 +1,7 @@
 import subprocess
 import time
 import logging
+import json
 from pathlib import Path
 import shutil
 import csv
@@ -16,6 +17,7 @@ logging.basicConfig(
 BASE_DIR = Path(__file__).resolve().parent
 GMAPS_DIR = BASE_DIR / "20251105 GMaps Scraper"
 SOCIAL_DIR = BASE_DIR / "20251105 Socials Scraper"
+RUN_CONFIG_FILE = BASE_DIR / "run_config.json"
 
 GMAPS_ARTIFACTS = [
     "links.txt",
@@ -37,6 +39,18 @@ scripts = [
     ("Search query", GMAPS_DIR / "search_query.py"),
     ("Place data scrape", GMAPS_DIR / "get_place_data.py"),
 ]
+
+
+def load_run_config() -> dict:
+    """Load runtime config written by the Telegram bot."""
+    try:
+        if RUN_CONFIG_FILE.exists():
+            config = json.loads(RUN_CONFIG_FILE.read_text(encoding="utf-8"))
+            logging.info(f"Loaded run config: {config}")
+            return config
+    except Exception as e:
+        logging.warning(f"Could not read run_config.json: {e}")
+    return {}
 
 
 def count_csv_rows(filepath: Path) -> int:
@@ -69,7 +83,12 @@ def cleanup_artifacts():
     logging.info(f"Cleanup: {deleted} files deleted.")
 
 
-def run_script(name: str, script_path: Path, retries=2, cwd: Path | None = None):
+def run_script(name: str, script_path: Path, retries=2, cwd: Path | None = None, extra_env: dict | None = None):
+    import os
+    env = os.environ.copy()
+    if extra_env:
+        env.update(extra_env)
+
     for attempt in range(1, retries + 2):
         print(f"\n🚀 Running: {script_path} (attempt {attempt})")
         logging.info(f"Running: {script_path}, attempt {attempt}")
@@ -78,6 +97,7 @@ def run_script(name: str, script_path: Path, retries=2, cwd: Path | None = None)
                 ["python3", str(script_path)],
                 check=True,
                 cwd=str(cwd) if cwd else None,
+                env=env,
             )
             print(f"✅ {script_path} completed successfully.")
             logging.info(f"{script_path} completed successfully.")
@@ -121,10 +141,15 @@ def run_postprocess(input_csv: Path):
 
 if __name__ == "__main__":
     pipeline_start = time.time()
-    
-    print("=== PIPELINE START ===")
-    logging.info("=== PIPELINE START ===")
-    notify("🟢 <b>Pipeline started</b>")
+
+    # Load config from Telegram bot
+    run_config = load_run_config()
+    scrape_reviews = run_config.get("scrape_reviews", True)
+
+    mode_label = "with review analysis" if scrape_reviews else "fast mode (no reviews)"
+    print(f"=== PIPELINE START — {mode_label} ===")
+    logging.info(f"=== PIPELINE START — {mode_label} ===")
+    notify(f"🟢 <b>Pipeline started</b> — {mode_label}")
 
     # Cleanup
     print("\n🧹 Cleaning up...")
@@ -133,10 +158,13 @@ if __name__ == "__main__":
     total_places = 0
     social_found = 0
 
+    # Pass review config to get_place_data.py via env var
+    scrape_env = {"SCRAPE_REVIEWS": "true" if scrape_reviews else "false"}
+
     for name, script in scripts:
-        ok = run_script(name, script, cwd=GMAPS_DIR)
+        ok = run_script(name, script, cwd=GMAPS_DIR, extra_env=scrape_env)
         if not ok:
-            print("⛔ Stopping - this step failed.")
+            print(f"⛔ Stopping — {name} failed.")
             notify(f"⛔ <b>Pipeline stopped</b> — {name} failed")
             break
         time.sleep(2)
@@ -182,5 +210,9 @@ if __name__ == "__main__":
     for f in output_files:
         if f.exists() and f.stat().st_size > 0:
             send_file(str(f), f"📎 {f.name}")
+
+    # Clean up run config
+    if RUN_CONFIG_FILE.exists():
+        RUN_CONFIG_FILE.unlink()
 
     print("\n🏁 Done.")
