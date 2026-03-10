@@ -3,22 +3,24 @@ Telegram bot for controlling the scraper pipeline.
 Commands:
   /locations Miami, Tampa       - set locations.txt (or send .txt file with /locations caption)
   /categories pizza, sushi      - set categories.txt (or send .txt file with /categories caption)
-  /run                          - start pipeline in tmux
+  /run                          - start pipeline (asks about review scraping first)
   /status                       - check if pipeline is running
   /show_locations               - show current locations.txt
   /show_categories              - show current categories.txt
 """
 
 import subprocess
+import json
 from pathlib import Path
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
 TELEGRAM_BOT_TOKEN = "8260583365:AAHAyLxwuuoWHa8XmDwchahsQNrxfZuiGaM"
 ALLOWED_CHAT_ID = 1825555416
 
 SCRAPER_DIR = Path.home() / "scraper" / "Scraper"
 GMAPS_DIR = SCRAPER_DIR / "20251105 GMaps Scraper"
+RUN_CONFIG_FILE = SCRAPER_DIR / "run_config.json"
 
 
 def is_allowed(update: Update) -> bool:
@@ -91,9 +93,33 @@ async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if result.returncode == 0:
         await update.message.reply_text("⚠️ Pipeline already running! Check with /status.")
         return
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("⚡ Skip reviews (faster)", callback_data="run:no_reviews"),
+            InlineKeyboardButton("📊 With reviews", callback_data="run:with_reviews"),
+        ]
+    ])
+    await update.message.reply_text("Scrape reviews too? (scrolls through all reviews per place, takes longer)", reply_markup=keyboard)
+
+
+async def handle_run_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if not query or query.from_user.id != ALLOWED_CHAT_ID:
+        return
+    await query.answer()
+
+    scrape_reviews = query.data == "run:with_reviews"
+
+    # Write config file for run_all.py to read
+    config = {"scrape_reviews": scrape_reviews}
+    RUN_CONFIG_FILE.write_text(json.dumps(config), encoding="utf-8")
+
+    mode = "with review analysis" if scrape_reviews else "without reviews (fast mode)"
+    await query.edit_message_text(f"🚀 Pipeline started {mode}.")
+
     cmd = f"cd {SCRAPER_DIR} && git pull && source venv/bin/activate && python3 run_all.py"
     subprocess.run(["tmux", "new-session", "-d", "-s", "scraper", "bash", "-c", cmd])
-    await update.message.reply_text("🚀 Pipeline started.")
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -148,6 +174,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("show_locations", cmd_show_locations))
     app.add_handler(CommandHandler("show_categories", cmd_show_categories))
+    app.add_handler(CallbackQueryHandler(handle_run_callback, pattern="^run:"))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
     print("🤖 Bot started.")
     app.run_polling()
