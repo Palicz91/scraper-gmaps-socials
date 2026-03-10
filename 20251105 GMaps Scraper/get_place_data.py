@@ -529,7 +529,7 @@ def main():
     # =============================================
     # CONFIG
     # =============================================
-    SCRAPE_REVIEWS = True
+    SCRAPE_REVIEWS = os.environ.get("SCRAPE_REVIEWS", "true").lower() == "true"
     MAX_REVIEW_SCROLLS = 50
     MIN_REVIEWS_FOR_ANALYSIS = 100
     OUTPUT_FILE = "places_data.csv"
