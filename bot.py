@@ -30,12 +30,12 @@ async def cmd_locations(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     text = " ".join(context.args).strip() if context.args else ""
     if not text:
-        await update.message.reply_text("Használat:\n• /locations Miami, Tampa, Orlando\n• Vagy küldj .txt fájlt /locations caption-nel")
+        await update.message.reply_text("Usage:\n• /locations Miami, Tampa, Orlando\n• Or send a .txt file with /locations caption")
         return
     items = [item.strip() for item in text.split(",") if item.strip()]
     filepath = GMAPS_DIR / "locations.txt"
     filepath.write_text("\n".join(items) + "\n", encoding="utf-8")
-    await update.message.reply_text(f"✅ locations.txt frissítve ({len(items)} lokáció):\n" + "\n".join(items))
+    await update.message.reply_text(f"✅ locations.txt updated ({len(items)} locations):\n" + "\n".join(items))
 
 
 async def cmd_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -43,12 +43,12 @@ async def cmd_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     text = " ".join(context.args).strip() if context.args else ""
     if not text:
-        await update.message.reply_text("Használat:\n• /categories pizza, sushi\n• Vagy küldj .txt fájlt /categories caption-nel")
+        await update.message.reply_text("Usage:\n• /categories pizza, sushi\n• Or send a .txt file with /categories caption")
         return
     items = [item.strip() for item in text.split(",") if item.strip()]
     filepath = GMAPS_DIR / "categories.txt"
     filepath.write_text("\n".join(items) + "\n", encoding="utf-8")
-    await update.message.reply_text(f"✅ categories.txt frissítve ({len(items)} kategória):\n" + "\n".join(items))
+    await update.message.reply_text(f"✅ categories.txt updated ({len(items)} categories):\n" + "\n".join(items))
 
 
 async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -59,11 +59,11 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     caption = (update.message.caption or "").strip().lower()
 
     if not doc or not doc.file_name.endswith(".txt"):
-        await update.message.reply_text("⚠️ Csak .txt fájlt fogadok /locations vagy /categories caption-nel.")
+        await update.message.reply_text("Only .txt files accepted with /locations or /categories caption.")
         return
 
     if caption not in ("/locations", "/categories"):
-        await update.message.reply_text("⚠️ Caption legyen /locations vagy /categories")
+        await update.message.reply_text("Caption must be /locations or /categories")
         return
 
     file = await doc.get_file()
@@ -72,16 +72,16 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if caption == "/locations":
         target = GMAPS_DIR / "locations.txt"
-        label = "lokáció"
+        label = "locations"
     else:
         target = GMAPS_DIR / "categories.txt"
-        label = "kategória"
+        label = "categories"
 
     target.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     preview = "\n".join(lines[:10])
-    suffix = f"\n... és még {len(lines) - 10}" if len(lines) > 10 else ""
-    await update.message.reply_text(f"✅ {target.name} frissítve ({len(lines)} {label}):\n{preview}{suffix}")
+    suffix = f"\n... and {len(lines) - 10} more" if len(lines) > 10 else ""
+    await update.message.reply_text(f"✅ {target.name} updated ({len(lines)} {label}):\n{preview}{suffix}")
 
 
 async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -89,11 +89,11 @@ async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     result = subprocess.run(["tmux", "has-session", "-t", "scraper"], capture_output=True)
     if result.returncode == 0:
-        await update.message.reply_text("⚠️ Pipeline már fut! /status -szal ellenőrizheted.")
+        await update.message.reply_text("⚠️ Pipeline already running! Check with /status.")
         return
     cmd = f"cd {SCRAPER_DIR} && git pull && source venv/bin/activate && python3 run_all.py"
     subprocess.run(["tmux", "new-session", "-d", "-s", "scraper", "bash", "-c", cmd])
-    await update.message.reply_text("🚀 Pipeline elindítva.")
+    await update.message.reply_text("🚀 Pipeline started.")
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,16 +101,15 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     result = subprocess.run(["tmux", "has-session", "-t", "scraper"], capture_output=True)
     if result.returncode == 0:
-        # Grab last 10 lines from tmux pane
         log = subprocess.run(
             ["tmux", "capture-pane", "-t", "scraper", "-p", "-S", "-10"],
             capture_output=True, text=True
         )
         lines = log.stdout.strip()
-        msg = "🟢 Pipeline fut.\n\n<pre>" + (lines[-3000:] if lines else "Nincs log") + "</pre>"
+        msg = "🟢 Pipeline running.\n\n<pre>" + (lines[-3000:] if lines else "No log") + "</pre>"
         await update.message.reply_text(msg, parse_mode="HTML")
     else:
-        await update.message.reply_text("⚪ Nincs futó pipeline.")
+        await update.message.reply_text("⚪ No pipeline running.")
 
 
 async def cmd_show_locations(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -124,7 +123,7 @@ async def cmd_show_locations(update: Update, context: ContextTypes.DEFAULT_TYPE)
         else:
             await update.message.reply_text(f"📍 locations.txt:\n{content}")
     else:
-        await update.message.reply_text("⚠️ locations.txt nem található.")
+        await update.message.reply_text("⚠️ locations.txt not found.")
 
 
 async def cmd_show_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -138,7 +137,7 @@ async def cmd_show_categories(update: Update, context: ContextTypes.DEFAULT_TYPE
         else:
             await update.message.reply_text(f"📂 categories.txt:\n{content}")
     else:
-        await update.message.reply_text("⚠️ categories.txt nem található.")
+        await update.message.reply_text("⚠️ categories.txt not found.")
 
 
 if __name__ == "__main__":
@@ -150,5 +149,5 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("show_locations", cmd_show_locations))
     app.add_handler(CommandHandler("show_categories", cmd_show_categories))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
-    print("🤖 Bot elindult.")
+    print("🤖 Bot started.")
     app.run_polling()
