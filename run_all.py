@@ -63,34 +63,34 @@ def cleanup_artifacts():
             print(f"  🗑️  {filepath}")
             deleted += 1
     if deleted == 0:
-        print("  ℹ️  Nem volt törölhető fájl.")
+        print("  ℹ️  Nothing to clean up.")
     else:
-        print(f"  ✅ {deleted} fájl törölve.")
-    logging.info(f"Cleanup: {deleted} fájl törölve.")
+        print(f"  ✅ {deleted} files deleted.")
+    logging.info(f"Cleanup: {deleted} files deleted.")
 
 
 def run_script(name: str, script_path: Path, retries=2, cwd: Path | None = None):
     for attempt in range(1, retries + 2):
-        print(f"\n🚀 Futtatás: {script_path} (próbálkozás {attempt})")
-        logging.info(f"Futtatás: {script_path}, próbálkozás {attempt}")
+        print(f"\n🚀 Running: {script_path} (attempt {attempt})")
+        logging.info(f"Running: {script_path}, attempt {attempt}")
         try:
             subprocess.run(
                 ["python3", str(script_path)],
                 check=True,
                 cwd=str(cwd) if cwd else None,
             )
-            print(f"✅ {script_path} sikeresen lefutott.")
-            logging.info(f"{script_path} sikeresen lefutott.")
+            print(f"✅ {script_path} completed successfully.")
+            logging.info(f"{script_path} completed successfully.")
             stage_done(name)
             return True
         except subprocess.CalledProcessError as e:
-            print(f"❌ Hiba: {e}")
-            logging.error(f"Hiba: {e}")
+            print(f"❌ Error: {e}")
+            logging.error(f"Error: {e}")
             if attempt < retries + 1:
-                print("🔁 Újrapróbálás 5 mp múlva...")
+                print("🔁 Retrying in 5s...")
                 time.sleep(5)
             else:
-                print("⚠️ Feladom ezt a scriptet.")
+                print("⚠️ Giving up on this script.")
                 stage_failed(name, str(e))
                 return False
 
@@ -98,36 +98,36 @@ def run_script(name: str, script_path: Path, retries=2, cwd: Path | None = None)
 def run_postprocess(input_csv: Path):
     postprocess_script = SOCIAL_DIR / "postprocess_places.py"
     if not postprocess_script.exists():
-        print("⚠️ Postprocess script nem található.")
-        logging.warning("postprocess_places.py hiányzik.")
+        print("⚠️ Postprocess script not found.")
+        logging.warning("postprocess_places.py missing.")
         return
 
-    print(f"\n🚀 Postprocess futtatása: {postprocess_script} {input_csv}")
-    logging.info(f"Postprocess futtatása: {postprocess_script} {input_csv}")
+    print(f"\n🚀 Running postprocess: {postprocess_script} {input_csv}")
+    logging.info(f"Running postprocess: {postprocess_script} {input_csv}")
     try:
         subprocess.run(
             ["python3", str(postprocess_script), str(input_csv)],
             check=True,
             cwd=str(SOCIAL_DIR),
         )
-        print("✅ Postprocess sikeresen lefutott.")
-        logging.info("Postprocess sikeresen lefutott.")
+        print("✅ Postprocess completed.")
+        logging.info("Postprocess completed.")
         stage_done("Postprocess")
     except subprocess.CalledProcessError as e:
-        print(f"❌ Postprocess hiba: {e}")
-        logging.error(f"Postprocess hiba: {e}")
+        print(f"❌ Postprocess error: {e}")
+        logging.error(f"Postprocess error: {e}")
         stage_failed("Postprocess", str(e))
 
 
 if __name__ == "__main__":
     pipeline_start = time.time()
     
-    print("=== RUN ALL START ===")
-    logging.info("=== RUN ALL START ===")
-    notify("🟢 <b>Pipeline indult</b>")
+    print("=== PIPELINE START ===")
+    logging.info("=== PIPELINE START ===")
+    notify("🟢 <b>Pipeline started</b>")
 
     # Cleanup
-    print("\n🧹 Cleanup...")
+    print("\n🧹 Cleaning up...")
     cleanup_artifacts()
 
     total_places = 0
@@ -136,8 +136,8 @@ if __name__ == "__main__":
     for name, script in scripts:
         ok = run_script(name, script, cwd=GMAPS_DIR)
         if not ok:
-            print("⛔ Megállok, mert ez a lépés nem futott le.")
-            notify(f"⛔ <b>Pipeline leállt</b> — {name} sikertelen")
+            print("⛔ Stopping - this step failed.")
+            notify(f"⛔ <b>Pipeline stopped</b> — {name} failed")
             break
         time.sleep(2)
     else:
@@ -146,9 +146,9 @@ if __name__ == "__main__":
             total_places = count_csv_rows(gmaps_csv)
             target_csv = SOCIAL_DIR / "input.csv"
             shutil.copy2(gmaps_csv, target_csv)
-            print(f"📁 Átmásoltam: {gmaps_csv} → {target_csv}")
-            logging.info(f"Átmásoltam: {gmaps_csv} → {target_csv}")
-            stage_done("GMaps → Social copy", f"📍 {total_places} hely")
+            print(f"📁 Copied: {gmaps_csv} → {target_csv}")
+            logging.info(f"Copied: {gmaps_csv} → {target_csv}")
+            stage_done("GMaps → Social copy", f"📍 {total_places} places")
 
             social_script = SOCIAL_DIR / "social_media_scraper.py"
             if social_script.exists():
@@ -159,20 +159,20 @@ if __name__ == "__main__":
                         social_found = count_csv_rows(output_csv)
                         run_postprocess(output_csv)
                     else:
-                        print("⚠️ Nem találom az output.csv-t.")
-                        logging.warning("output.csv hiányzik.")
-                        stage_failed("Social output", "output.csv hiányzik")
+                        print("⚠️ output.csv not found.")
+                        logging.warning("output.csv missing.")
+                        stage_failed("Social output", "output.csv missing")
             else:
-                print("⚠️ Social script nem található.")
+                print("⚠️ Social script not found.")
         else:
-            print("⚠️ Nem találom a places_data.csv-t.")
-            logging.warning("places_data.csv hiányzik.")
-            stage_failed("GMaps output", "places_data.csv hiányzik")
+            print("⚠️ places_data.csv not found.")
+            logging.warning("places_data.csv missing.")
+            stage_failed("GMaps output", "places_data.csv missing")
 
     duration = time.time() - pipeline_start
     pipeline_summary(total_places, social_found, duration)
 
-    # Output fájlok elküldése Telegramon
+    # Send output files via Telegram
     from telegram_notify import send_file
     output_files = [
         GMAPS_DIR / "places_data.csv",
@@ -183,4 +183,4 @@ if __name__ == "__main__":
         if f.exists() and f.stat().st_size > 0:
             send_file(str(f), f"📎 {f.name}")
 
-    print("\n🏁 Kész.")
+    print("\n🏁 Done.")
