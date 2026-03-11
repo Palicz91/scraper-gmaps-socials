@@ -220,6 +220,9 @@ def count_unanswered_reviews(driver, max_reviews_to_check=None):
         'answered': 0,
         'unanswered': 0,
         'unanswered_pct': 0,
+        'negative_total': 0,
+        'negative_unanswered': 0,
+        'negative_unanswered_pct': 0,
     }
 
     try:
@@ -245,8 +248,25 @@ def count_unanswered_reviews(driver, max_reviews_to_check=None):
                         By.XPATH, './/div[contains(@class, "owner-response")]'
                     )
 
-                if owner_responses:
+                # Star rating kiolvasás
+                try:
+                    star_el = review_el.find_element(By.CSS_SELECTOR, 'span[role="img"][aria-label*="star"]')
+                    star_label = star_el.get_attribute('aria-label')
+                    star_match = re.search(r'(\d+)', star_label)
+                    stars = int(star_match.group(1)) if star_match else 0
+                except:
+                    stars = 0
+
+                is_negative = stars in (1, 2)
+                is_answered = bool(owner_responses)
+
+                if is_answered:
                     answered += 1
+
+                if is_negative:
+                    result['negative_total'] += 1
+                    if not is_answered:
+                        result['negative_unanswered'] += 1
             except:
                 continue
 
@@ -254,6 +274,9 @@ def count_unanswered_reviews(driver, max_reviews_to_check=None):
         result['answered'] = answered
         result['unanswered'] = unanswered
         result['unanswered_pct'] = round((unanswered / total) * 100, 1) if total > 0 else 0
+        result['negative_unanswered_pct'] = round(
+            (result['negative_unanswered'] / result['negative_total']) * 100, 1
+        ) if result['negative_total'] > 0 else 0
 
     except Exception as e:
         print(f"  ⚠️  Error counting reviews: {e}")
@@ -428,6 +451,9 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
             item['reviews_answered'] = ''
             item['reviews_unanswered'] = ''
             item['reviews_unanswered_pct'] = ''
+            item['negative_total'] = ''
+            item['negative_unanswered'] = ''
+            item['negative_unanswered_pct'] = ''
 
             if scrape_reviews and item.get('reviews') and int(item.get('reviews', '0') or '0') > 0:
                 total_reviews = int(item['reviews'])
@@ -452,9 +478,13 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
                         item['reviews_answered'] = review_stats['answered']
                         item['reviews_unanswered'] = review_stats['unanswered']
                         item['reviews_unanswered_pct'] = review_stats['unanswered_pct']
+                        item['negative_total'] = review_stats['negative_total']
+                        item['negative_unanswered'] = review_stats['negative_unanswered']
+                        item['negative_unanswered_pct'] = review_stats['negative_unanswered_pct']
 
                         print(f"  📊 Reviews: {review_stats['total_reviews_loaded']} loaded, "
-                              f"{review_stats['unanswered']} unanswered ({review_stats['unanswered_pct']}%)")
+                              f"{review_stats['unanswered']} unanswered ({review_stats['unanswered_pct']}%), "
+                              f"{review_stats['negative_total']} negative, {review_stats['negative_unanswered']} neg. unanswered ({review_stats['negative_unanswered_pct']}%)")
                     else:
                         print("  ⚠️  Could not open reviews tab, skipping review analysis")
 
@@ -487,7 +517,8 @@ def save_single_record_to_csv(record, filename="places_data.csv"):
     fieldnames = [
         'name', 'url', 'category', 'website', 'phone', 'lat', 'lng',
         'reviews', 'rating', 'address', 'located_in', 'plus_code',
-        'reviews_loaded', 'reviews_answered', 'reviews_unanswered', 'reviews_unanswered_pct'
+        'reviews_loaded', 'reviews_answered', 'reviews_unanswered', 'reviews_unanswered_pct',
+        'negative_total', 'negative_unanswered', 'negative_unanswered_pct'
     ]
 
     try:
