@@ -39,7 +39,7 @@ consecutive_empty_count = 0
 RATE_LIMIT_THRESHOLD = 5       # After 5 consecutive empty ratings, assume rate limited
 RATE_LIMIT_COOLDOWN = 120      # 2 min cooldown when rate limited
 BATCH_SIZE = 200               # Longer pause every N links
-BATCH_PAUSE = 300              # 5 min pause between batches
+BATCH_PAUSE = 60              # 1 min pause between batches
 MIN_DELAY = 5                  # Min seconds between requests
 MAX_DELAY = 12                 # Max seconds between requests
 DRIVER_RESTART_EVERY = 100     # New browser (new user-agent) every N links
@@ -674,3 +674,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
