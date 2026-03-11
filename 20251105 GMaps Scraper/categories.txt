@@ -1,17 +1,1 @@
 restaurants
-cafe
-bar
-pizza
-sushi
-steakhouse
-brunch
-bakery
-taco
-sports bar
-food truck
-gastropub
-juice bar
-ice cream shop
-deli
-bistro
-eatery
