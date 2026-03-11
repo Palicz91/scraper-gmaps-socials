@@ -454,6 +454,8 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
             item['negative_total'] = ''
             item['negative_unanswered'] = ''
             item['negative_unanswered_pct'] = ''
+            item['est_unanswered'] = ''
+            item['est_negative_unanswered'] = ''
 
             if scrape_reviews and item.get('reviews') and int(item.get('reviews', '0') or '0') > 0:
                 total_reviews = int(item['reviews'])
@@ -481,6 +483,16 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
                         item['negative_total'] = review_stats['negative_total']
                         item['negative_unanswered'] = review_stats['negative_unanswered']
                         item['negative_unanswered_pct'] = review_stats['negative_unanswered_pct']
+
+                        # Extrapolate if we couldn't scroll all reviews
+                        loaded = review_stats['total_reviews_loaded']
+                        if loaded > 0 and total_reviews > loaded:
+                            ratio = total_reviews / loaded
+                            item['est_unanswered'] = round(review_stats['unanswered'] * ratio)
+                            item['est_negative_unanswered'] = round(review_stats['negative_unanswered'] * ratio)
+                        else:
+                            item['est_unanswered'] = review_stats['unanswered']
+                            item['est_negative_unanswered'] = review_stats['negative_unanswered']
 
                         print(f"  📊 Reviews: {review_stats['total_reviews_loaded']} loaded, "
                               f"{review_stats['unanswered']} unanswered ({review_stats['unanswered_pct']}%), "
@@ -518,7 +530,8 @@ def save_single_record_to_csv(record, filename="places_data.csv"):
         'name', 'url', 'category', 'website', 'phone', 'lat', 'lng',
         'reviews', 'rating', 'address', 'located_in', 'plus_code',
         'reviews_loaded', 'reviews_answered', 'reviews_unanswered', 'reviews_unanswered_pct',
-        'negative_total', 'negative_unanswered', 'negative_unanswered_pct'
+        'negative_total', 'negative_unanswered', 'negative_unanswered_pct',
+        'est_unanswered', 'est_negative_unanswered'
     ]
 
     try:
