@@ -122,6 +122,17 @@ async def handle_run_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     subprocess.run(["tmux", "new-session", "-d", "-s", "scraper", "bash", "-c", cmd])
 
 
+async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_allowed(update):
+        return
+    result = subprocess.run(["tmux", "has-session", "-t", "scraper"], capture_output=True)
+    if result.returncode != 0:
+        await update.message.reply_text("⚪ No pipeline running.")
+        return
+    subprocess.run(["tmux", "send-keys", "-t", "scraper", "C-c", ""])
+    await update.message.reply_text("🛑 Stop signal sent to scraper.")
+
+
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
@@ -171,6 +182,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("locations", cmd_locations))
     app.add_handler(CommandHandler("categories", cmd_categories))
     app.add_handler(CommandHandler("run", cmd_run))
+    app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("show_locations", cmd_show_locations))
     app.add_handler(CommandHandler("show_categories", cmd_show_categories))
