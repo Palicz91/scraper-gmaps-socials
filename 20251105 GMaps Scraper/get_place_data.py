@@ -484,12 +484,13 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
                         item['negative_unanswered'] = review_stats['negative_unanswered']
                         item['negative_unanswered_pct'] = review_stats['negative_unanswered_pct']
 
-                        # Extrapolate if we couldn't scroll all reviews
+# Extrapolate to total reviews
                         loaded = review_stats['total_reviews_loaded']
-                        if loaded > 0 and total_reviews > loaded:
-                            ratio = total_reviews / loaded
-                            item['est_unanswered'] = round(review_stats['unanswered'] * ratio)
-                            item['est_negative_unanswered'] = round(review_stats['negative_unanswered'] * ratio)
+                        if loaded > 0:
+                            unanswered_ratio = review_stats['unanswered'] / loaded
+                            neg_unanswered_ratio = review_stats['negative_unanswered'] / loaded
+                            item['est_unanswered'] = round(unanswered_ratio * total_reviews)
+                            item['est_negative_unanswered'] = round(neg_unanswered_ratio * total_reviews)
                         else:
                             item['est_unanswered'] = review_stats['unanswered']
                             item['est_negative_unanswered'] = review_stats['negative_unanswered']
