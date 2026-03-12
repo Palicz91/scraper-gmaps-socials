@@ -200,6 +200,39 @@ if __name__ == "__main__":
     duration = time.time() - pipeline_start
     pipeline_summary(total_places, social_found, duration)
 
+    # ─── Email Find & Verify ───
+    email_output = None
+    cleared_csv = SOCIAL_DIR / "output_cleared.csv"
+    if cleared_csv.exists() and cleared_csv.stat().st_size > 0:
+        print("\n📧 Running email pipeline...")
+        logging.info("Running email pipeline...")
+        notify("📧 <b>Email pipeline started</b>")
+        try:
+            from email_pipeline import process_csv
+            email_result = process_csv(
+                str(cleared_csv),
+                str(SOCIAL_DIR / "output_emails.csv"),
+            )
+            if email_result:
+                email_output = Path(email_result["output_path"])
+                stats = email_result
+                msg = (
+                    f"📧 <b>Email pipeline done</b>\n"
+                    f"With email: {stats['with_email']}/{stats['total']}\n"
+                    f"Found: {stats['find_stats']['found']} | Catch-all: {stats['find_stats']['catch_all']}\n"
+                    f"Verified OK: {stats['verify_stats'].get('safe',0) + stats['verify_stats'].get('risky',0)}"
+                )
+                notify(msg)
+                stage_done("Email pipeline")
+            else:
+                stage_failed("Email pipeline", "No result returned")
+        except Exception as e:
+            logging.error(f"Email pipeline error: {e}")
+            stage_failed("Email pipeline", str(e))
+    else:
+        print("⚠️ No output_cleared.csv found, skipping email pipeline.")
+        logging.warning("output_cleared.csv missing, skipping email pipeline.")
+
     # Send output files via Telegram
     from telegram_notify import send_file
     output_files = [
@@ -207,6 +240,8 @@ if __name__ == "__main__":
         SOCIAL_DIR / "output.csv",
         SOCIAL_DIR / "output_cleared.csv",
     ]
+    if email_output and email_output.exists():
+        output_files.append(email_output)
     for f in output_files:
         if f.exists() and f.stat().st_size > 0:
             send_file(str(f), f"📎 {f.name}")
