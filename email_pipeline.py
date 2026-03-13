@@ -240,6 +240,22 @@ def process_csv(input_path: str, output_path: str = None):
 
     log.info(f"Output written to {output_path}")
 
+    # ─── Write cleaned CSV (safe + risky only) ───
+    cleaned_path = str(Path(output_path).parent / (Path(output_path).stem + "_cleaned.csv"))
+    cleaned_count = 0
+    with open(cleaned_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=out_fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            if not row.get("final_email"):
+                continue
+            if row.get("verify_status") in ("invalid", "error", "unknown", ""):
+                continue
+            writer.writerow(row)
+            cleaned_count += 1
+
+    log.info(f"Cleaned output written to {cleaned_path} ({cleaned_count} rows)")
+
     # Summary
     total = len(rows)
     with_email = sum(1 for r in rows if r.get("final_email"))
@@ -250,15 +266,18 @@ def process_csv(input_path: str, output_path: str = None):
         f"  Total: {total}\n"
         f"  With email: {with_email} ({round(with_email/total*100)}%)\n"
         f"  Scraped: {find_stats['scraped']} | Found: {find_stats['found']} | Catch-all: {find_stats['catch_all']}\n"
-        f"  Verified OK: {verified_ok} | Invalid: {verify_stats['invalid']} | Unknown: {verify_stats['unknown']}"
+        f"  Verified OK: {verified_ok} | Invalid: {verify_stats['invalid']} | Unknown: {verify_stats['unknown']}\n"
+        f"  Cleaned CSV: {cleaned_count} rows"
     )
     log.info(summary)
     print(summary)
 
     return {
         "output_path": output_path,
+        "cleaned_path": cleaned_path,
         "total": total,
         "with_email": with_email,
+        "cleaned_count": cleaned_count,
         "find_stats": find_stats,
         "verify_stats": verify_stats,
     }
