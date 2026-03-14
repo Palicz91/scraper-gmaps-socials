@@ -223,6 +223,11 @@ def count_unanswered_reviews(driver, max_reviews_to_check=None):
         'negative_total': 0,
         'negative_unanswered': 0,
         'negative_unanswered_pct': 0,
+        'stars_5': 0,
+        'stars_4': 0,
+        'stars_3': 0,
+        'stars_2': 0,
+        'stars_1': 0,
     }
 
     try:
@@ -259,6 +264,10 @@ def count_unanswered_reviews(driver, max_reviews_to_check=None):
 
                 is_negative = stars in (1, 2)
                 is_answered = bool(owner_responses)
+
+                # Star distribution counting
+                if stars in (1, 2, 3, 4, 5):
+                    result[f'stars_{stars}'] += 1
 
                 if is_answered:
                     answered += 1
@@ -456,6 +465,16 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
             item['negative_unanswered_pct'] = ''
             item['est_unanswered'] = ''
             item['est_negative_unanswered'] = ''
+            item['stars_5'] = ''
+            item['stars_4'] = ''
+            item['stars_3'] = ''
+            item['stars_2'] = ''
+            item['stars_1'] = ''
+            item['est_stars_5'] = ''
+            item['est_stars_4'] = ''
+            item['est_stars_3'] = ''
+            item['est_stars_2'] = ''
+            item['est_stars_1'] = ''
 
             if scrape_reviews and item.get('reviews') and int(item.get('reviews', '0') or '0') > 0:
                 total_reviews = int(item['reviews'])
@@ -483,6 +502,11 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
                         item['negative_total'] = review_stats['negative_total']
                         item['negative_unanswered'] = review_stats['negative_unanswered']
                         item['negative_unanswered_pct'] = review_stats['negative_unanswered_pct']
+                        item['stars_5'] = review_stats['stars_5']
+                        item['stars_4'] = review_stats['stars_4']
+                        item['stars_3'] = review_stats['stars_3']
+                        item['stars_2'] = review_stats['stars_2']
+                        item['stars_1'] = review_stats['stars_1']
 
 # Extrapolate to total reviews
                         loaded = review_stats['total_reviews_loaded']
@@ -491,13 +515,19 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
                             neg_unanswered_ratio = review_stats['negative_unanswered'] / loaded
                             item['est_unanswered'] = round(unanswered_ratio * total_reviews)
                             item['est_negative_unanswered'] = round(neg_unanswered_ratio * total_reviews)
+                            for s in (5, 4, 3, 2, 1):
+                                ratio = review_stats[f'stars_{s}'] / loaded
+                                item[f'est_stars_{s}'] = round(ratio * total_reviews)
                         else:
                             item['est_unanswered'] = review_stats['unanswered']
                             item['est_negative_unanswered'] = review_stats['negative_unanswered']
+                            for s in (5, 4, 3, 2, 1):
+                                item[f'est_stars_{s}'] = review_stats[f'stars_{s}']
 
                         print(f"  📊 Reviews: {review_stats['total_reviews_loaded']} loaded, "
                               f"{review_stats['unanswered']} unanswered ({review_stats['unanswered_pct']}%), "
                               f"{review_stats['negative_total']} negative, {review_stats['negative_unanswered']} neg. unanswered ({review_stats['negative_unanswered_pct']}%)")
+                        print(f"  ⭐ Stars: 5★={review_stats['stars_5']} 4★={review_stats['stars_4']} 3★={review_stats['stars_3']} 2★={review_stats['stars_2']} 1★={review_stats['stars_1']}")
                     else:
                         print("  ⚠️  Could not open reviews tab, skipping review analysis")
 
@@ -532,7 +562,9 @@ def save_single_record_to_csv(record, filename="places_data.csv"):
         'reviews', 'rating', 'address', 'located_in', 'plus_code',
         'reviews_loaded', 'reviews_answered', 'reviews_unanswered', 'reviews_unanswered_pct',
         'negative_total', 'negative_unanswered', 'negative_unanswered_pct',
-        'est_unanswered', 'est_negative_unanswered'
+        'est_unanswered', 'est_negative_unanswered',
+        'stars_5', 'stars_4', 'stars_3', 'stars_2', 'stars_1',
+        'est_stars_5', 'est_stars_4', 'est_stars_3', 'est_stars_2', 'est_stars_1',
     ]
 
     try:
