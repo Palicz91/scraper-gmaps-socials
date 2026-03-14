@@ -1,6 +1,6 @@
 """
 Cold Email Smartlead Push - Phase 5
-Reads generated CSV, pushes leads to Smartlead campaigns (bucket = campaign).
+Single campaign, bucket differentiation via custom fields.
 """
 
 import csv
@@ -19,13 +19,7 @@ log = logging.getLogger("smartlead")
 
 SMARTLEAD_API_KEY = os.environ.get("SMARTLEAD_API_KEY", "")
 SMARTLEAD_BASE = "https://server.smartlead.ai/api/v1"
-
-# Campaign IDs per bucket - set these after creating campaigns in Smartlead
-CAMPAIGN_IDS = {
-    "A": int(os.environ.get("SMARTLEAD_CAMPAIGN_A", "0")),
-    "B": int(os.environ.get("SMARTLEAD_CAMPAIGN_B", "0")),
-    "D": int(os.environ.get("SMARTLEAD_CAMPAIGN_D", "0")),
-}
+CAMPAIGN_ID = int(os.environ.get("SMARTLEAD_CAMPAIGN_ID", "0"))
 
 BATCH_SIZE = 100  # leads per API call (max 400)
 RATE_LIMIT_DELAY = 1.5  # seconds between API calls
@@ -34,7 +28,6 @@ RATE_LIMIT_DELAY = 1.5  # seconds between API calls
 # ─── Smartlead API helpers ──────────────────────────────────
 
 def _sl_post(path: str, data: dict) -> dict | None:
-    """POST to Smartlead API."""
     url = f"{SMARTLEAD_BASE}{path}?api_key={SMARTLEAD_API_KEY}"
     try:
         r = requests.post(url, json=data, headers={"Content-Type": "application/json"}, timeout=30)
@@ -48,30 +41,15 @@ def _sl_post(path: str, data: dict) -> dict | None:
         return None
 
 
-def _sl_get(path: str) -> dict | None:
-    """GET from Smartlead API."""
-    url = f"{SMARTLEAD_BASE}{path}?api_key={SMARTLEAD_API_KEY}"
-    try:
-        r = requests.get(url, timeout=30)
-        if r.status_code == 200:
-            return r.json()
-        else:
-            log.error(f"Smartlead API {r.status_code}: {r.text[:300]}")
-            return None
-    except Exception as e:
-        log.error(f"Smartlead API error: {e}")
-        return None
-
-
 # ─── Campaign setup ─────────────────────────────────────────
 
-def setup_campaign_sequences(campaign_id: int) -> bool:
+def setup_campaign_sequences(campaign_id: int = None) -> bool:
     """
-    Set up the 3-step sequence for a campaign.
-    Seq1 & Seq2 use custom fields, Seq3 is fixed breakup.
-    Campaign must be PAUSED to update sequences.
+    Set up the 3-step sequence. Campaign must be PAUSED.
     """
-    if not campaign_id:
+    cid = campaign_id or CAMPAIGN_ID
+    if not cid:
+        log.error("No campaign ID")
         return False
 
     sequences = [
@@ -98,29 +76,40 @@ def setup_campaign_sequences(campaign_id: int) -> bool:
         },
     ]
 
-    result = _sl_post(f"/campaigns/{campaign_id}/sequences", {"sequences": sequences})
+    result = _sl_post(f"/campaigns/{cid}/sequences", {"sequences": sequences})
     if result:
-        log.info(f"Sequences set for campaign {campaign_id}")
+        log.info(f"Sequences set for campaign {cid}")
+        print(f"✅ Sequences configured for campaign {cid}")
         return True
     else:
-        log.error(f"Failed to set sequences for campaign {campaign_id}")
+        log.error(f"Failed to set sequences for campaign {cid}")
         return False
 
 
 # ─── Push leads ─────────────────────────────────────────────
 
-def push_leads_to_campaign(campaign_id: int, leads: list[dict]) -> dict:
+def push_csv_to_smartlead(input_path: str) -> dict:
     """
-    Push a batch of leads to a Smartlead campaign.
-    Returns stats dict.
+    Read generated CSV, push all leads to single Smartlead campaign.
+    Bucket tracked via custom field for filtering in analytics.
     """
-    stats = {"added": 0, "skipped": 0, "failed": 0, "batches": 0}
+    in_path = Path(input_path)
+    if not in_path.exists():
+        log.error(f"Input not found: {input_path}")
+        return {"total": 0, "added": 0, "skipped": 0, "failed": 0}
 
-    if not campaign_id or not SMARTLEAD_API_KEY:
-        log.error("Missing campaign_id or API key")
-        return stats
+    if not SMARTLEAD_API_KEY or not CAMPAIGN_ID:
+        log.error("SMARTLEAD_API_KEY or SMARTLEAD_CAMPAIGN_ID not set")
+        return {"total": 0, "added": 0, "skipped": 0, "failed": 0}
 
-    # Build lead list in Smartlead format
+    # Read leads
+    with open(in_path, "r", encoding="utf-8-sig") as f:
+        leads = list(csv.DictReader(f))
+
+    log.info(f"Pushing {len(leads)} leads to campaign {CAMPAIGN_ID}")
+    print(f"📤 Pushing {len(leads)} leads to Smartlead campaign {CAMPAIGN_ID}...")
+
+    # Build Smartlead lead list
     lead_list = []
     for lead in leads:
         sl_lead = {
@@ -147,6 +136,8 @@ def push_leads_to_campaign(campaign_id: int, leads: list[dict]) -> dict:
         lead_list.append(sl_lead)
 
     # Send in batches
+    stats = {"total": len(lead_list), "added": 0, "skipped": 0, "failed": 0, "batches": 0}
+
     for i in range(0, len(lead_list), BATCH_SIZE):
         batch = lead_list[i:i + BATCH_SIZE]
         stats["batches"] += 1
@@ -161,7 +152,7 @@ def push_leads_to_campaign(campaign_id: int, leads: list[dict]) -> dict:
             },
         }
 
-        result = _sl_post(f"/campaigns/{campaign_id}/leads", payload)
+        result = _sl_post(f"/campaigns/{CAMPAIGN_ID}/leads", payload)
         if result and result.get("success"):
             added = result.get("added_count", 0)
             skipped = result.get("skipped_count", 0)
@@ -170,87 +161,39 @@ def push_leads_to_campaign(campaign_id: int, leads: list[dict]) -> dict:
             log.info(f"Batch {stats['batches']}: {added} added, {skipped} skipped")
         else:
             stats["failed"] += len(batch)
-            log.error(f"Batch {stats['batches']} failed for campaign {campaign_id}")
+            log.error(f"Batch {stats['batches']} failed")
 
         if i + BATCH_SIZE < len(lead_list):
             time.sleep(RATE_LIMIT_DELAY)
 
-    return stats
-
-
-# ─── Main push flow ─────────────────────────────────────────
-
-def push_csv_to_smartlead(input_path: str) -> dict:
-    """
-    Read generated CSV, group by bucket, push to respective Smartlead campaigns.
-    Returns combined stats.
-    """
-    in_path = Path(input_path)
-    if not in_path.exists():
-        log.error(f"Input not found: {input_path}")
-        return {}
-
-    if not SMARTLEAD_API_KEY:
-        log.error("SMARTLEAD_API_KEY not set")
-        return {}
-
-    # Check campaign IDs
-    for bucket, cid in CAMPAIGN_IDS.items():
-        if not cid:
-            log.warning(f"No campaign ID for bucket {bucket} (SMARTLEAD_CAMPAIGN_{bucket})")
-
-    # Read and group by bucket
-    with open(in_path, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-
-    buckets = {}
-    for row in rows:
-        b = row.get("bucket", "")
-        if b not in buckets:
-            buckets[b] = []
-        buckets[b].append(row)
-
-    # Push per bucket
-    all_stats = {}
-    total_added = 0
-    total_failed = 0
-
-    for bucket, leads in buckets.items():
-        campaign_id = CAMPAIGN_IDS.get(bucket)
-        if not campaign_id:
-            log.warning(f"Skipping bucket {bucket}: no campaign ID configured")
-            continue
-
-        print(f"  📤 Pushing {len(leads)} leads to campaign {campaign_id} (bucket {bucket})...")
-        stats = push_leads_to_campaign(campaign_id, leads)
-        all_stats[bucket] = stats
-        total_added += stats["added"]
-        total_failed += stats["failed"]
-        print(f"  ✓ Bucket {bucket}: {stats['added']} added, {stats['skipped']} skipped, {stats['failed']} failed")
+    # Bucket breakdown for logging
+    bucket_counts = {}
+    for lead in leads:
+        b = lead.get("bucket", "?")
+        bucket_counts[b] = bucket_counts.get(b, 0) + 1
 
     print(
-        f"📤 Smartlead push done: {total_added} added, {total_failed} failed "
-        f"across {len(buckets)} buckets"
+        f"📤 Done: {stats['added']} added, {stats['skipped']} skipped, {stats['failed']} failed\n"
+        f"   Buckets: {' '.join(f'{k}={v}' for k, v in sorted(bucket_counts.items()))}"
     )
-    log.info(f"Smartlead push complete: {json.dumps(all_stats)}")
+    log.info(f"Smartlead push complete: {json.dumps(stats)}")
 
-    return {"total_leads": len(rows), "total_added": total_added, "total_failed": total_failed, "by_bucket": all_stats}
+    return stats
 
 
 if __name__ == "__main__":
     import sys
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
     if len(sys.argv) < 2:
-        print("Usage: python cold_email_smartlead.py <generated.csv>")
-        print("Env: SMARTLEAD_API_KEY, SMARTLEAD_CAMPAIGN_A, SMARTLEAD_CAMPAIGN_B, SMARTLEAD_CAMPAIGN_D")
+        print("Usage:")
+        print("  python cold_email_smartlead.py <generated.csv>        # push leads")
+        print("  python cold_email_smartlead.py --setup-sequences      # configure sequences")
+        print("Env: SMARTLEAD_API_KEY, SMARTLEAD_CAMPAIGN_ID")
         sys.exit(1)
 
-    if "--setup-sequences" in sys.argv:
-        for bucket, cid in CAMPAIGN_IDS.items():
-            if cid:
-                print(f"Setting up sequences for campaign {cid} (bucket {bucket})...")
-                setup_campaign_sequences(cid)
+    if sys.argv[1] == "--setup-sequences":
+        setup_campaign_sequences()
     else:
         result = push_csv_to_smartlead(sys.argv[1])
         print(f"\nResult: {json.dumps(result, indent=2)}")
