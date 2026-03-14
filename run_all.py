@@ -2,6 +2,7 @@ import subprocess
 import time
 import logging
 import json
+import os
 from pathlib import Path
 import shutil
 import csv
@@ -242,6 +243,83 @@ if __name__ == "__main__":
     ]
     if email_output and email_output.exists():
         output_files.append(email_output)
+
+    # ─── Cold Email Pipeline (Classify → Generate → Smartlead) ───
+    cold_email_csv = None
+    email_source = email_output if email_output and email_output.exists() else cleared_csv
+    if email_source and email_source.exists() and email_source.stat().st_size > 0:
+        print("\n🎯 Running cold email pipeline...")
+        logging.info("Cold email pipeline started")
+        notify("🎯 <b>Cold email pipeline started</b>")
+
+        try:
+            # Phase 3: Classify
+            from cold_email_classifier import classify_csv
+            classified_path = str(BASE_DIR / "cold_email_classified.csv")
+            classify_result = classify_csv(str(email_source), classified_path)
+
+            if classify_result.get("classified", 0) > 0:
+                msg = (
+                    f"📊 <b>Classified</b>: {classify_result['classified']}/{classify_result['total']}\n"
+                    f"A(burning)={classify_result['buckets']['A']} "
+                    f"B(eroding)={classify_result['buckets']['B']} "
+                    f"D(sleeping)={classify_result['buckets']['D']}\n"
+                    f"Skipped: {classify_result['skipped']}"
+                )
+                notify(msg)
+                stage_done("Classify leads")
+
+                # Phase 4: Generate AI emails
+                gemini_key = os.environ.get("GEMINI_API_KEY", "")
+                if gemini_key:
+                    from cold_email_generator import generate_emails_csv
+                    generated_path = str(BASE_DIR / "cold_email_generated.csv")
+                    gen_result = generate_emails_csv(classified_path, generated_path)
+
+                    if gen_result.get("generated", 0) > 0:
+                        cold_email_csv = Path(generated_path)
+                        msg = (
+                            f"📧 <b>AI emails generated</b>: {gen_result['generated']}/{gen_result['total']}\n"
+                            f"Failed: {gen_result['failed']}\n"
+                            f"A={gen_result['by_bucket'].get('A',0)} "
+                            f"B={gen_result['by_bucket'].get('B',0)} "
+                            f"D={gen_result['by_bucket'].get('D',0)}"
+                        )
+                        notify(msg)
+                        stage_done("Generate AI emails")
+
+                        # Phase 5: Push to Smartlead
+                        sl_key = os.environ.get("SMARTLEAD_API_KEY", "")
+                        if sl_key:
+                            from cold_email_smartlead import push_csv_to_smartlead
+                            push_result = push_csv_to_smartlead(generated_path)
+                            msg = (
+                                f"📤 <b>Smartlead push</b>: {push_result.get('total_added', 0)} added\n"
+                                f"Failed: {push_result.get('total_failed', 0)}"
+                            )
+                            notify(msg)
+                            stage_done("Smartlead push")
+                        else:
+                            print("⚠️ SMARTLEAD_API_KEY not set, skipping push.")
+                            logging.warning("SMARTLEAD_API_KEY not set")
+                    else:
+                        stage_failed("Generate AI emails", f"0 generated out of {gen_result.get('total', 0)}")
+                else:
+                    print("⚠️ GEMINI_API_KEY not set, skipping AI email generation.")
+                    logging.warning("GEMINI_API_KEY not set")
+            else:
+                print("⚠️ No leads classified, skipping email generation.")
+                logging.info("No leads classified (all skipped)")
+                notify(f"⚠️ No leads classified out of {classify_result.get('total', 0)} (all skipped)")
+
+        except Exception as e:
+            logging.error(f"Cold email pipeline error: {e}", exc_info=True)
+            stage_failed("Cold email pipeline", str(e))
+
+    # Add generated CSV to output files
+    if cold_email_csv and cold_email_csv.exists():
+        output_files.append(cold_email_csv)
+
     for f in output_files:
         if f.exists() and f.stat().st_size > 0:
             send_file(str(f), f"📎 {f.name}")
