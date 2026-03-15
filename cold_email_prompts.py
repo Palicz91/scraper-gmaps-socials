@@ -24,6 +24,14 @@ HARD RULES:
 - Say "we" not a company or tool name.
 - seq1 CTA format: "We'll draft replies to your first 10 reviews for free. Reply [one word] and [specific next step with timeframe]."
 - seq2 CTA format: "Reply [one word] and we'll [specific action] [timeframe]." (shorter than seq1)
+
+BUSINESS NAME USAGE (critical, this is what separates a real email from a template):
+- Use the business name MAXIMUM once in the body across seq1 and seq2. Not in both. If seq1 uses it, seq2 must not, and vice versa.
+- NEVER drop the full name at the start of a sentence as a subject. Bad: "The Ivy Brasserie has 471 unanswered reviews." Good: "471 complaints on your Google page and not a single reply."
+- When you do use the name, weave it into context naturally. Good: "anyone googling The Ivy Brasserie in Chelsea sees those complaints first." Bad: "The Ivy Brasserie has a problem with unanswered reviews."
+- Prefer "your place", "your page", "your listing", "your restaurant" over the business name in most sentences. The recipient already knows their own name.
+- In subject lines the name works IF it's part of a question or provocation: "Ivy Brasserie, 3.9?" or "Who replies at Ivy Brasserie?" But never as a generic opener: "The Ivy Brasserie review report".
+- If the name is very long or awkward, shorten it naturally. "PALA PIZZA ROMANA & BISTROT" becomes "Pala Pizza" in context. Use common sense like a human would.
 """
 
 # ─── Bucket A: "Burning" ────────────────────────────────────
@@ -43,11 +51,11 @@ BEAT 3 - The ask: What we do + what they do + when.
 BUCKET_A_EXAMPLES = {
     "scene": """
 EXAMPLE (study rhythm and tone, don't copy):
-{"seq1_subject": "Who's reading your 1-star reviews?", "seq1_body": "Someone on Chapel St just googled Thai food, pulled up your page, and saw 89 complaints with no reply from you. They're eating somewhere else tonight. This is happening with a 3.7 when your regulars clearly love the place.\\n\\nWe'll draft replies to your first 10 reviews for free. Reply \\"go\\" and they're in your inbox tomorrow.", "seq2_subject": "3.7 with great food?", "seq2_body": "About 60% of your Google reviews are 4 or 5 stars. Your food isn't a 3.7. But the unanswered complaints are pulling the whole picture down for anyone searching Chapel St.\\n\\nReply \\"go\\" and we'll draft your first 10 replies within 48 hours."}
+{"seq1_subject": "Who's reading your 1-star reviews?", "seq1_body": "Someone on Chapel St just googled Thai food, pulled up your page, and saw 89 complaints with no reply. They're eating somewhere else tonight. This is happening while your regulars clearly love the place.\\n\\nWe'll draft replies to your first 10 reviews for free. Reply \\"go\\" and they're in your inbox tomorrow.", "seq2_subject": "3.7 with great food?", "seq2_body": "About 60% of your Google reviews are 4 or 5 stars. Your food isn't a 3.7. But the unanswered complaints are pulling the whole picture down for anyone searching Chapel St.\\n\\nReply \\"go\\" and we'll draft your first 10 replies within 48 hours."}
 """,
     "wound": """
 EXAMPLE (study rhythm and tone, don't copy):
-{"seq1_subject": "127 complaints, who replies?", "seq1_body": "127 negative reviews on your Google page and not a single reply. Guests don't see a busy team. They see a restaurant on Smith St that doesn't care what they think. That's why the 3.6 isn't moving.\\n\\nWe'll draft your first 10 review replies for free. Reply \\"yes\\" and you'll have them within 48 hours.", "seq2_subject": "Is 3.6 fair for your food?", "seq2_body": "About 800 of your reviews are 1 or 2 stars. Most have no response. The guests who loved it gave you 5 stars but the angry ones are doing all the talking.\\n\\nReply \\"yes\\" and we'll draft your first 10 replies by Friday."}
+{"seq1_subject": "127 complaints, who replies?", "seq1_body": "127 negative reviews on your Google page and not a single reply. Guests don't see a busy team. They see a restaurant on Smith St that doesn't care what they think. That's why the 3.6 isn't moving.\\n\\nWe'll draft your first 10 review replies for free. Reply \\"yes\\" and you'll have them within 48 hours.", "seq2_subject": "Is 3.6 fair?", "seq2_body": "About 800 of your reviews are 1 or 2 stars. Most have no response. The guests who loved it gave you 5 stars but the angry ones are doing all the talking on your page.\\n\\nReply \\"yes\\" and we'll draft your first 10 replies by Friday."}
 """,
     "question": """
 EXAMPLE (study rhythm and tone, don't copy):
@@ -76,7 +84,7 @@ EXAMPLE (study rhythm and tone, don't copy):
 """,
     "wound": """
 EXAMPLE (study rhythm and tone, don't copy):
-{"seq1_subject": "72% of reviews ignored?", "seq1_body": "About 72% of your Google reviews have no reply. That's over 900 guests who took time to write something and got nothing back. Google notices too, restaurants that respond rank higher in local search.\\n\\nWe'll draft replies to your first 10 reviews for free. Reply \\"start\\" and they're in your inbox tomorrow.", "seq2_subject": "Does Google rank you lower?", "seq2_body": "Google's local algorithm favors restaurants that respond to reviews. With 72% of yours unanswered, you're leaving search visibility on the table alongside guest loyalty.\\n\\nReply \\"start\\" and we'll send your first 10 draft replies by Friday."}
+{"seq1_subject": "72% of reviews ignored?", "seq1_body": "About 72% of your Google reviews have no reply. That's over 900 guests who took time to write something and got nothing back. Google notices too, restaurants that respond rank higher in local search.\\n\\nWe'll draft replies to your first 10 reviews for free. Reply \\"start\\" and they're in your inbox tomorrow.", "seq2_subject": "Does Google rank you lower?", "seq2_body": "Google's local algorithm favors restaurants that respond to reviews. With 72% of yours sitting unanswered, you're handing search visibility to the places nearby who do reply.\\n\\nReply \\"start\\" and we'll send your first 10 draft replies by Friday."}
 """,
     "question": """
 EXAMPLE (study rhythm and tone, don't copy):
@@ -101,7 +109,7 @@ BEAT 3 - The ask: What we do + what they do + when.
 BUCKET_D_EXAMPLES = {
     "scene": """
 EXAMPLE (study rhythm and tone, don't copy):
-{"seq1_subject": "4.7 but nobody replies?", "seq1_body": "Your guests love you. 4.7 with 600 reviews is impressive. But about 200 of those reviews have no response, including a handful of 1-stars that anyone googling you reads first.\\n\\nWe'll draft replies to your first 10 reviews for free. Reply \\"go\\" and they're in your inbox tomorrow.", "seq2_subject": "Your fans deserve a reply", "seq2_body": "Someone left you a detailed 5-star review last month about your tasting menu. They got nothing back. The places competing with you on the same street reply to everyone.\\n\\nReply \\"go\\" and we'll send your first 10 draft replies within 48 hours."}
+{"seq1_subject": "4.7 but nobody replies?", "seq1_body": "Your guests love you. 4.7 with 600 reviews is impressive. But about 200 of those reviews have no response, including a handful of 1-stars that anyone googling your place reads first.\\n\\nWe'll draft replies to your first 10 reviews for free. Reply \\"go\\" and they're in your inbox tomorrow.", "seq2_subject": "Your fans deserve a reply", "seq2_body": "Someone left a detailed 5-star review about your tasting menu last month. They got nothing back. The places competing with you on the same street reply to everyone.\\n\\nReply \\"go\\" and we'll send your first 10 draft replies within 48 hours."}
 """,
     "wound": """
 EXAMPLE (study rhythm and tone, don't copy):
@@ -166,10 +174,14 @@ def get_user_prompt(ctx: dict) -> str:
     if ctx.get("cluster_avg_response_rate"):
         cluster_lines += f"\n- Local average response rate is {ctx['cluster_avg_response_rate']:.0f}%. Theirs is {ctx.get('lrpi_c01_response_rate', 0):.0f}%."
 
+    # Short name for natural usage
+    full_name = ctx['place_name']
+    short_name = _shorten_name(full_name)
+
     return f"""Write a cold email (seq1 + seq2) for this restaurant. Follow every rule exactly.
 
 DATA (pick the most painful numbers, never use more than two per email):
-- Place: {ctx['place_name']}
+- Place: {full_name} (use "{short_name}" naturally if you mention the name, max once across both emails)
 - Type: {ctx['category']}
 - Street: {ctx['street']}
 - City: {ctx['city']}, {ctx['country']}
@@ -185,6 +197,38 @@ PAIN POINT: {ctx['pain']}
 seq1: 40-60 words, use ONE painful number. You can reference the cluster average for contrast if it amplifies the pain.
 seq2: 30-45 words, DIFFERENT angle and number than seq1. Must work standalone.
 JSON only. No explanation."""
+
+
+def _shorten_name(name: str) -> str:
+    """Shorten long business names naturally. 'PALA PIZZA ROMANA & BISTROT' → 'Pala Pizza'."""
+    if not name:
+        return name
+    import re
+    n = name.strip()
+    # Strip parenthetical suffixes: "Bianca Italian Restaurant (Siam Paragon)" → "Bianca Italian Restaurant"
+    n = re.sub(r'\s*\(.*?\)\s*$', '', n).strip()
+    # Strip " - subtitle" patterns: "Kokulabo Bangkok - Modern Izakaya" → "Kokulabo Bangkok"
+    if " - " in n:
+        n = n.split(" - ")[0].strip()
+    # Remove common suffixes
+    for suffix in [" Restaurant", " Ristorante", " Brasserie", " Bistro", " Bistrot",
+                   " Kitchen", " Eatery", " Dining", " Grill", " Lounge", " Cafe",
+                   " Pizzeria", " Trattoria", " Tavern", " Pub", " Bar & Grill"]:
+        if n.lower().endswith(suffix.lower()) and len(n) > len(suffix) + 3:
+            n = n[:len(n) - len(suffix)].strip()
+            break
+    # Remove trailing & SUFFIX patterns (e.g. "& BISTROT", "& Bar")
+    n = re.sub(r'\s*[&+]\s*\w*$', '', n).strip()
+    # Clean trailing punctuation
+    n = n.rstrip(" &+-,.")
+    # If still long (>25 chars), take first 2-3 words
+    if len(n) > 25:
+        words = n.split()
+        n = " ".join(words[:min(3, len(words))])
+    # Title case if all caps
+    if n == n.upper() and len(n) > 3:
+        n = n.title()
+    return n
 
 
 def get_opener_for_index(lead_index: int) -> str:
