@@ -506,22 +506,34 @@ def score_lead(row: dict, benchmarks: dict) -> dict | None:
     band = _assign_band(adj_score)
 
     # ─── Route to bucket or skip ───
-    routing = BAND_TO_BUCKET.get(band)
-    if routing is None:
-        return None  # Good/Excellent → skip
 
-    bucket, bucket_name = routing
+    # Bucket D override: sleeping elite (high rating, ignoring reviews)
+    # Checked BEFORE band routing because these places score Poor/Average
+    # due to bad C01/C15, but the email angle is different from burning/eroding
+    if rating >= 4.5 and c01 < 30 and unanswered > 30:
+        bucket, bucket_name = "D", "sleeping"
+        band_override = True
+    else:
+        band_override = False
+        routing = BAND_TO_BUCKET.get(band)
 
-    # Average band: only email if there's real negative pain
-    if band == "Average" and est_neg_unanswered < 5:
-        return None
+        if routing is None:
+            return None  # Good/Excellent → skip
+
+        bucket, bucket_name = routing
+
+        # Average band: only email if real pain exists
+        if band == "Average" and est_neg_unanswered < 5 and unanswered_pct < 60:
+            return None
 
     # Skip if unanswered < 25% (they're handling it)
     if unanswered_pct > 0 and unanswered_pct < 25:
         return None
 
     # ─── Pain point text ───
-    if band == "Critical":
+    if bucket == "D":
+        pain = f"{rating} rating but ~{unanswered} reviews ignored"
+    elif band == "Critical":
         if est_neg_unanswered >= 10:
             pain = f"{est_neg_unanswered} negative reviews without a reply"
         else:
@@ -531,8 +543,11 @@ def score_lead(row: dict, benchmarks: dict) -> dict | None:
             pain = f"{est_neg_unanswered} negative reviews without a reply"
         else:
             pain = f"{unanswered_pct:.0f}% of reviews unanswered"
-    else:  # Average
-        pain = f"~{est_neg_unanswered} unanswered complaints among {total} reviews"
+    else:  # Average → B
+        if est_neg_unanswered >= 5:
+            pain = f"~{est_neg_unanswered} unanswered complaints among {total} reviews"
+        else:
+            pain = f"{unanswered_pct:.0f}% of reviews unanswered"
 
     # ─── Location context ───
     address = row.get("address", "")
@@ -614,7 +629,7 @@ def classify_csv(input_path: str, output_path: str = None) -> dict:
         "total": len(rows),
         "classified": 0,
         "skipped": 0,
-        "buckets": {"A": 0, "B": 0},
+        "buckets": {"A": 0, "B": 0, "D": 0},
         "bands": {"Critical": 0, "Poor": 0, "Average": 0, "Good": 0, "Excellent": 0},
     }
     classified_rows = []
@@ -645,8 +660,8 @@ def classify_csv(input_path: str, output_path: str = None) -> dict:
         f"📊 LRPI Model B: {stats['classified']}/{stats['total']} classified\n"
         f"   Bands: Critical={stats['bands']['Critical']} Poor={stats['bands']['Poor']} "
         f"Average={stats['bands']['Average']} Good={stats['bands']['Good']} Excellent={stats['bands']['Excellent']}\n"
-        f"   Buckets: A(burning)={stats['buckets']['A']} B(eroding)={stats['buckets']['B']}\n"
-        f"   Skipped: {stats['skipped']} (Good/Excellent + no email + low data + low pain)"
+        f"   Buckets: A(burning)={stats['buckets']['A']} B(eroding)={stats['buckets']['B']} D(sleeping)={stats['buckets']['D']}\n"
+        f"   Skipped: {stats['skipped']} (no email + low data + low pain + managed)"
     )
 
     return {**stats, "output_path": output_path, "benchmarks": {
