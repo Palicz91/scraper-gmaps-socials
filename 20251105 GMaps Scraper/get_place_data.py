@@ -479,7 +479,9 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
             if scrape_reviews and item.get('reviews') and int(item.get('reviews', '0') or '0') > 0:
                 total_reviews = int(item['reviews'])
 
-                if total_reviews < min_reviews_for_analysis:
+                if not item.get('website'):
+                    print(f"  ⏭️  Skipping review analysis (no website found)")
+                elif total_reviews < min_reviews_for_analysis:
                     print(f"  ⏭️  Skipping review analysis ({total_reviews} < {min_reviews_for_analysis} threshold)")
                 else:
                     print(f"  📊 Analyzing reviews ({total_reviews} total)...")
