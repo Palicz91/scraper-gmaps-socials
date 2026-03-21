@@ -5,15 +5,19 @@ Usage: from telegram_notify import notify
 
 import requests
 import os
+from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
 
-# --- CONFIG ---
-TELEGRAM_BOT_TOKEN = "8260583365:AAHAyLxwuuoWHa8XmDwchahsQNrxfZuiGaM"
-TELEGRAM_CHAT_ID = "1825555416"
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(ENV_PATH)
+
+TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+INSTANCE_NAME = os.environ.get("INSTANCE_NAME", "scraper")
 
 
 def notify(message: str, silent: bool = False) -> bool:
-    """Send a Telegram message. Returns True if successful."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -30,28 +34,25 @@ def notify(message: str, silent: bool = False) -> bool:
 
 
 def stage_done(stage: str, details: str = ""):
-    """Notify that a pipeline stage completed."""
     ts = datetime.now().strftime("%H:%M:%S")
-    msg = f"✅ <b>{stage}</b> done ({ts})"
+    msg = f"✅ [{INSTANCE_NAME}] <b>{stage}</b> done ({ts})"
     if details:
         msg += f"\n{details}"
     notify(msg)
 
 
 def stage_failed(stage: str, error: str = ""):
-    """Notify that a pipeline stage failed."""
     ts = datetime.now().strftime("%H:%M:%S")
-    msg = f"🔴 <b>{stage}</b> FAILED ({ts})"
+    msg = f"🔴 [{INSTANCE_NAME}] <b>{stage}</b> FAILED ({ts})"
     if error:
         msg += f"\n<code>{error[:500]}</code>"
     notify(msg)
 
 
 def pipeline_summary(total_places: int = 0, social_found: int = 0, duration_sec: float = 0):
-    """Send end-of-pipeline summary."""
     mins = duration_sec / 60
     msg = (
-        f"🏁 <b>Pipeline complete</b>\n"
+        f"🏁 [{INSTANCE_NAME}] <b>Pipeline complete</b>\n"
         f"📍 Places: {total_places}\n"
         f"📱 Social found: {social_found}\n"
         f"⏱ Duration: {mins:.1f} min"
@@ -60,7 +61,6 @@ def pipeline_summary(total_places: int = 0, social_found: int = 0, duration_sec:
 
 
 def send_file(filepath: str, caption: str = "") -> bool:
-    """Send a file via Telegram. Returns True if successful."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
     try:
         with open(filepath, "rb") as f:

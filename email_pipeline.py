@@ -10,10 +10,15 @@ import time
 import logging
 import requests
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(ENV_PATH)
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-REACHER_URL = "http://localhost:9999/v0/check_email"
-REACHER_SECRET = "vgX6E1MFiAY5pNZ3-hMLM4RZy7qiba7J528WQPJfGRTT-b4-7IjTxKu2a905DBmb"
+REACHER_URL = os.environ.get("REACHER_URL", "http://localhost:9999/v0/check_email")
+REACHER_SECRET = os.environ.get("REACHER_SECRET", "")
 
 CONCURRENCY_FIND = 3
 CONCURRENCY_VERIFY = 5

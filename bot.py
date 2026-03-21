@@ -11,14 +11,22 @@ Commands:
 
 import subprocess
 import json
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
-TELEGRAM_BOT_TOKEN = "8260583365:AAHAyLxwuuoWHa8XmDwchahsQNrxfZuiGaM"
-ALLOWED_CHAT_ID = 1825555416
+# Load .env from the same directory as this script
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(ENV_PATH)
 
-SCRAPER_DIR = Path.home() / "scraper" / "Scraper"
+TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+ALLOWED_CHAT_ID = int(os.environ.get("TELEGRAM_CHAT_ID", "0"))
+INSTANCE_NAME = os.environ.get("INSTANCE_NAME", "scraper")
+TMUX_SESSION = os.environ.get("TMUX_SESSION", INSTANCE_NAME)
+
+SCRAPER_DIR = Path(__file__).resolve().parent
 GMAPS_DIR = SCRAPER_DIR / "20251105 GMaps Scraper"
 RUN_CONFIG_FILE = SCRAPER_DIR / "run_config.json"
 
@@ -89,7 +97,7 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
-    result = subprocess.run(["tmux", "has-session", "-t", "scraper"], capture_output=True)
+    result = subprocess.run(["tmux", "has-session", "-t", TMUX_SESSION], capture_output=True)
     if result.returncode == 0:
         await update.message.reply_text("⚠️ Pipeline already running! Check with /status.")
         return
@@ -116,37 +124,37 @@ async def handle_run_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     RUN_CONFIG_FILE.write_text(json.dumps(config), encoding="utf-8")
 
     mode = "with review analysis" if scrape_reviews else "without reviews (fast mode)"
-    await query.edit_message_text(f"🚀 Pipeline started {mode}.")
+    await query.edit_message_text(f"🚀 [{INSTANCE_NAME}] Pipeline started {mode}.")
 
     cmd = f"cd {SCRAPER_DIR} && git pull && source venv/bin/activate && python3 run_all.py"
-    subprocess.run(["tmux", "new-session", "-d", "-s", "scraper", "bash", "-c", cmd])
+    subprocess.run(["tmux", "new-session", "-d", "-s", TMUX_SESSION, "bash", "-c", cmd])
 
 
 async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
-    result = subprocess.run(["tmux", "has-session", "-t", "scraper"], capture_output=True)
+    result = subprocess.run(["tmux", "has-session", "-t", TMUX_SESSION], capture_output=True)
     if result.returncode != 0:
         await update.message.reply_text("⚪ No pipeline running.")
         return
-    subprocess.run(["tmux", "send-keys", "-t", "scraper", "C-c", ""])
-    await update.message.reply_text("🛑 Stop signal sent to scraper.")
+    subprocess.run(["tmux", "send-keys", "-t", TMUX_SESSION, "C-c", ""])
+    await update.message.reply_text(f"🛑 [{INSTANCE_NAME}] Stop signal sent.")
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
-    result = subprocess.run(["tmux", "has-session", "-t", "scraper"], capture_output=True)
+    result = subprocess.run(["tmux", "has-session", "-t", TMUX_SESSION], capture_output=True)
     if result.returncode == 0:
         log = subprocess.run(
-            ["tmux", "capture-pane", "-t", "scraper", "-p", "-S", "-10"],
+            ["tmux", "capture-pane", "-t", TMUX_SESSION, "-p", "-S", "-10"],
             capture_output=True, text=True
         )
         lines = log.stdout.strip()
-        msg = "🟢 Pipeline running.\n\n<pre>" + (lines[-3000:] if lines else "No log") + "</pre>"
+        msg = f"🟢 [{INSTANCE_NAME}] Pipeline running.\n\n<pre>" + (lines[-3000:] if lines else "No log") + "</pre>"
         await update.message.reply_text(msg, parse_mode="HTML")
     else:
-        await update.message.reply_text("⚪ No pipeline running.")
+        await update.message.reply_text(f"⚪ [{INSTANCE_NAME}] No pipeline running.")
 
 
 async def cmd_show_locations(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -188,5 +196,5 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("show_categories", cmd_show_categories))
     app.add_handler(CallbackQueryHandler(handle_run_callback, pattern="^run:"))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
-    print("🤖 Bot started.")
+    print(f"🤖 [{INSTANCE_NAME}] Bot started.")
     app.run_polling()
