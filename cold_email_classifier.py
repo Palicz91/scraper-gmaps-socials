@@ -552,8 +552,14 @@ def score_lead(row: dict, benchmarks: dict) -> dict | None:
     # ─── Location context ───
     address = row.get("address", "")
     parts = [p.strip() for p in address.split(",") if p.strip()]
-    street = parts[0] if len(parts) >= 1 else ""
-    city = parts[-2] if len(parts) >= 3 else (parts[-1] if len(parts) >= 2 else "")
+    # Try to find city from country column first, fall back to address parsing
+    city_from_row = row.get("city", "")
+    if city_from_row:
+        city = city_from_row
+        street = parts[1] if len(parts) >= 2 else (parts[0] if parts else "")
+    else:
+        street = parts[0] if len(parts) >= 1 else ""
+        city = parts[-2] if len(parts) >= 3 else (parts[-1] if len(parts) >= 2 else "")
     country = row.get("country", "")
 
     return {

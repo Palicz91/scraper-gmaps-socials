@@ -23,7 +23,7 @@ HARD RULES:
 - Contractions always. Casual but not sloppy.
 - Say "we" not a company or tool name.
 - seq1 CTA format: "We'll draft replies to your first 10 reviews for free. Reply [one word] and [specific next step with timeframe]."
-- seq2 CTA format: "Reply [one word] and we'll [specific action] [timeframe]." (shorter than seq1)
+- seq2 CTA format: "Reply [one word] and we'll draft your first 10 replies [timeframe]." Never deviate from this structure. Never use "we'll share how" or "we'll show you" or any other action.
 
 BUSINESS NAME USAGE (critical, this is what separates a real email from a template):
 - Use the business name MAXIMUM once in the body across seq1 and seq2. Not in both. If seq1 uses it, seq2 must not, and vice versa.
@@ -163,16 +163,24 @@ def get_system_prompt(bucket: str, opener_style: str) -> str:
     )
 
 
+def _f(val, default=0):
+    """Safely cast CSV string to float."""
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return default
+
+
 def get_user_prompt(ctx: dict) -> str:
     """Build the per-lead user prompt from classified context."""
     # Cluster comparison lines (only if data available)
     cluster_lines = ""
     if ctx.get("cluster_avg_rating"):
-        rating_diff = ctx["rating"] - ctx["cluster_avg_rating"]
+        rating_diff = _f(ctx["rating"]) - _f(ctx["cluster_avg_rating"])
         direction = "above" if rating_diff > 0 else "below"
-        cluster_lines += f"\n- Their rating is {abs(rating_diff):.1f} {direction} the local {ctx.get('cluster', 'restaurant')} average of {ctx['cluster_avg_rating']:.1f}"
+        cluster_lines += f"\n- Their rating is {abs(rating_diff):.1f} {direction} the local {ctx.get('cluster', 'restaurant')} average of {_f(ctx['cluster_avg_rating']):.1f}"
     if ctx.get("cluster_avg_response_rate"):
-        cluster_lines += f"\n- Local average response rate is {ctx['cluster_avg_response_rate']:.0f}%. Theirs is {ctx.get('lrpi_c01_response_rate', 0):.0f}%."
+        cluster_lines += f"\n- Local average response rate is {_f(ctx['cluster_avg_response_rate']):.0f}%. Theirs is {_f(ctx.get('lrpi_c01_response_rate', 0)):.0f}%."
 
     # Short name for natural usage
     full_name = ctx['place_name']
@@ -186,7 +194,7 @@ DATA (pick the most painful numbers, never use more than two per email):
 - Street: {ctx['street']}
 - City: {ctx['city']}, {ctx['country']}
 - Google rating: {ctx['rating']} across {ctx['total_reviews']} reviews
-- Response rate: {ctx.get('lrpi_c01_response_rate', 0):.0f}%
+- Response rate: {_f(ctx.get('lrpi_c01_response_rate', 0)):.0f}%
 - ~{ctx['est_unanswered']} reviews have no reply ({ctx['unanswered_pct']}%)
 - ~{ctx['neg_unanswered']} of those are 1-2 star complaints sitting unanswered
 - Stars: 5★ ~{ctx['est_stars_5']} | 4★ ~{ctx['est_stars_4']} | 3★ ~{ctx['est_stars_3']} | 2★ ~{ctx['est_stars_2']} | 1★ ~{ctx['est_stars_1']}{cluster_lines}

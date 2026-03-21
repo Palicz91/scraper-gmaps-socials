@@ -19,7 +19,7 @@ log = logging.getLogger("email_gen")
 # ─── Config ─────────────────────────────────────────────────
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 MAX_RETRIES = 3
@@ -27,7 +27,7 @@ RETRY_DELAY = 5
 CONCURRENCY = 3  # parallel API calls
 RATE_LIMIT_DELAY = 1.0  # seconds between calls (free tier: 15 RPM)
 TEMPERATURE = 0.9
-MAX_OUTPUT_TOKENS = 600
+MAX_OUTPUT_TOKENS = 4096
 
 
 # ─── Gemini API call ────────────────────────────────────────

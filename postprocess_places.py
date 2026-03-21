@@ -18,6 +18,12 @@ PLACEHOLDER_DOMAINS = {
     "mysite.com",
     "mystore.com",
     "godaddy.com",
+    "wolt.com",
+    "amrest.eu",
+    "accor.com",
+    "szte.hu",
+    "foodpanda.com",
+    "grab.com",
 }
 
 EMAIL_RE = re.compile(
@@ -186,7 +192,7 @@ def is_valid_email(email: str) -> bool:
         return False
     
     # 5. Fájlkiterjesztés check - bárhol az emailben
-    image_exts = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico")
+    image_exts = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico", ".js", ".css", ".ts", ".jsx")
     if any(ext in lower for ext in image_exts):
         return False
     

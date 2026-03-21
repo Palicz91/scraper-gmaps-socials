@@ -28,6 +28,7 @@ SKIP_DOMAINS = {
     "facebook.com", "google.com", "instagram.com", "twitter.com", "tiktok.com",
     "youtube.com", "linkedin.com", "tripadvisor.com", "yelp.com", "line.me",
     "grab.com", "foodpanda.com", "wongnai.com", "agoda.com", "booking.com",
+    "wolt.com", "amrest.eu", "accor.com", "szte.hu",
 }
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

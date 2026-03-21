@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+from pathlib import Path as _P
+load_dotenv(_P(__file__).resolve().parent / ".env")
+
 import subprocess
 import time
 import logging
