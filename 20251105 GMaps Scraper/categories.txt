@@ -1,1 +1,30 @@
 restaurants
+cafes
+bistro
+brasserie
+gastropub
+brunch restaurant
+coffee shop
+dessert shop
+bakery cafe
+wine bar
+cocktail bar with food
+pizza restaurant
+burger restaurant
+sushi restaurant
+indian restaurant
+italian restaurant
+thai restaurant
+mexican restaurant
+greek restaurant
+turkish restaurant
+lebanese restaurant
+japanese restaurant
+chinese restaurant
+korean restaurant
+vietnamese restaurant
+tapas bar
+steakhouse
+seafood restaurant
+vegan restaurant
+vegetarian restaurant

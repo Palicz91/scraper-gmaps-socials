@@ -94,6 +94,47 @@ async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ {target.name} updated ({len(lines)} {label}):\n{preview}{suffix}")
 
 
+# Default pipeline settings
+DEFAULT_PIPELINE_CONFIG = {
+    "scrape_reviews": True,
+    "email_validation": True,
+    "classification": True,
+    "email_generation": True,
+    "smartlead_push": True,
+}
+
+PIPELINE_LABELS = {
+    "scrape_reviews": "📊 Review scraping",
+    "email_validation": "📧 Email validation",
+    "classification": "🎯 Classification",
+    "email_generation": "✉️ Email generation",
+    "smartlead_push": "📤 Smartlead push",
+}
+
+
+def build_config_message(config: dict) -> str:
+    lines = ["🔧 <b>Pipeline beállítások:</b>\n"]
+    for key, label in PIPELINE_LABELS.items():
+        status = "✅" if config.get(key, True) else "❌"
+        lines.append(f"{label}: {status}")
+    lines.append("\nKattints egy gombra a ki/bekapcsoláshoz, majd ▶️ START.")
+    return "\n".join(lines)
+
+
+def build_config_keyboard(config: dict) -> InlineKeyboardMarkup:
+    buttons = []
+    for key, label in PIPELINE_LABELS.items():
+        is_on = config.get(key, True)
+        toggle_text = f"{'🟢' if is_on else '🔴'} {label.split(' ', 1)[1]}"
+        buttons.append([InlineKeyboardButton(toggle_text, callback_data=f"cfg:{key}")])
+    buttons.append([
+        InlineKeyboardButton("✅ Mind BE", callback_data="cfg:all_on"),
+        InlineKeyboardButton("❌ Mind KI", callback_data="cfg:all_off"),
+    ])
+    buttons.append([InlineKeyboardButton("▶️ START", callback_data="cfg:start")])
+    return InlineKeyboardMarkup(buttons)
+
+
 async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
@@ -102,13 +143,13 @@ async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Pipeline already running! Check with /status.")
         return
 
-    keyboard = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("⚡ Skip reviews (faster)", callback_data="run:no_reviews"),
-            InlineKeyboardButton("📊 With reviews", callback_data="run:with_reviews"),
-        ]
-    ])
-    await update.message.reply_text("Scrape reviews too? (scrolls through all reviews per place, takes longer)", reply_markup=keyboard)
+    config = dict(DEFAULT_PIPELINE_CONFIG)
+    context.user_data["pipeline_config"] = config
+    await update.message.reply_text(
+        build_config_message(config),
+        reply_markup=build_config_keyboard(config),
+        parse_mode="HTML",
+    )
 
 
 async def handle_run_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -117,17 +158,41 @@ async def handle_run_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     await query.answer()
 
-    scrape_reviews = query.data == "run:with_reviews"
+    data = query.data
+    config = context.user_data.get("pipeline_config", dict(DEFAULT_PIPELINE_CONFIG))
 
-    # Write config file for run_all.py to read
-    config = {"scrape_reviews": scrape_reviews}
-    RUN_CONFIG_FILE.write_text(json.dumps(config), encoding="utf-8")
+    if data == "cfg:start":
+        # Write config and launch pipeline
+        RUN_CONFIG_FILE.write_text(json.dumps(config), encoding="utf-8")
 
-    mode = "with review analysis" if scrape_reviews else "without reviews (fast mode)"
-    await query.edit_message_text(f"🚀 [{INSTANCE_NAME}] Pipeline started {mode}.")
+        enabled = [PIPELINE_LABELS[k].split(" ", 1)[1] for k, v in config.items() if v]
+        disabled = [PIPELINE_LABELS[k].split(" ", 1)[1] for k, v in config.items() if not v]
+        summary = "✅ " + ", ".join(enabled) if enabled else ""
+        if disabled:
+            summary += "\n❌ " + ", ".join(disabled)
+        await query.edit_message_text(f"🚀 [{INSTANCE_NAME}] Pipeline started!\n{summary}")
 
-    cmd = f"cd {SCRAPER_DIR} && git pull && source venv/bin/activate && python3 run_all.py"
-    subprocess.run(["tmux", "new-session", "-d", "-s", TMUX_SESSION, "bash", "-c", cmd])
+        cmd = f"cd {SCRAPER_DIR} && git pull && source venv/bin/activate && python3 run_all.py"
+        subprocess.run(["tmux", "new-session", "-d", "-s", TMUX_SESSION, "bash", "-c", cmd])
+        return
+
+    if data == "cfg:all_on":
+        for key in config:
+            config[key] = True
+    elif data == "cfg:all_off":
+        for key in config:
+            config[key] = False
+    elif data.startswith("cfg:"):
+        key = data[4:]
+        if key in config:
+            config[key] = not config[key]
+
+    context.user_data["pipeline_config"] = config
+    await query.edit_message_text(
+        build_config_message(config),
+        reply_markup=build_config_keyboard(config),
+        parse_mode="HTML",
+    )
 
 
 async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -194,7 +259,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("show_locations", cmd_show_locations))
     app.add_handler(CommandHandler("show_categories", cmd_show_categories))
-    app.add_handler(CallbackQueryHandler(handle_run_callback, pattern="^run:"))
+    app.add_handler(CallbackQueryHandler(handle_run_callback, pattern="^cfg:"))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
     print(f"🤖 [{INSTANCE_NAME}] Bot started.")
     app.run_polling()

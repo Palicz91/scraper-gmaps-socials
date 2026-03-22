@@ -150,8 +150,23 @@ if __name__ == "__main__":
     # Load config from Telegram bot
     run_config = load_run_config()
     scrape_reviews = run_config.get("scrape_reviews", True)
+    do_email_validation = run_config.get("email_validation", True)
+    do_classification = run_config.get("classification", True)
+    do_email_generation = run_config.get("email_generation", True)
+    do_smartlead_push = run_config.get("smartlead_push", True)
 
-    mode_label = "with review analysis" if scrape_reviews else "fast mode (no reviews)"
+    mode_parts = []
+    if scrape_reviews:
+        mode_parts.append("reviews")
+    if do_email_validation:
+        mode_parts.append("email validation")
+    if do_classification:
+        mode_parts.append("classification")
+    if do_email_generation:
+        mode_parts.append("email gen")
+    if do_smartlead_push:
+        mode_parts.append("smartlead")
+    mode_label = ", ".join(mode_parts) if mode_parts else "scrape only"
     print(f"=== PIPELINE START — {mode_label} ===")
     logging.info(f"=== PIPELINE START — {mode_label} ===")
     notify(f"🟢 <b>Pipeline started</b> — {mode_label}")
@@ -208,7 +223,10 @@ if __name__ == "__main__":
     # ─── Email Find & Verify ───
     email_output = None
     cleared_csv = SOCIAL_DIR / "output_cleared.csv"
-    if cleared_csv.exists() and cleared_csv.stat().st_size > 0:
+    if not do_email_validation:
+        print("\n⏭️ Email validation skipped (config).")
+        logging.info("Email validation skipped by config.")
+    elif cleared_csv.exists() and cleared_csv.stat().st_size > 0:
         print("\n📧 Running email pipeline...")
         logging.info("Running email pipeline...")
         notify("📧 <b>Email pipeline started</b>")
@@ -251,34 +269,51 @@ if __name__ == "__main__":
     # ─── Cold Email Pipeline (Classify → Generate → Smartlead) ───
     cold_email_csv = None
     email_source = email_output if email_output and email_output.exists() else cleared_csv
-    if email_source and email_source.exists() and email_source.stat().st_size > 0:
+
+    if not do_classification and not do_email_generation and not do_smartlead_push:
+        print("\n⏭️ Cold email pipeline skipped (config).")
+        logging.info("Cold email pipeline skipped by config.")
+    elif email_source and email_source.exists() and email_source.stat().st_size > 0:
         print("\n🎯 Running cold email pipeline...")
         logging.info("Cold email pipeline started")
         notify("🎯 <b>Cold email pipeline started</b>")
 
         try:
-            # Phase 3: Classify
-            from cold_email_classifier import classify_csv
             classified_path = str(BASE_DIR / "cold_email_classified.csv")
-            classify_result = classify_csv(str(email_source), classified_path)
 
-            if classify_result.get("classified", 0) > 0:
-                msg = (
-                    f"📊 <b>Classified</b>: {classify_result['classified']}/{classify_result['total']}\n"
-                    f"A(burning)={classify_result['buckets']['A']} "
-                    f"B(eroding)={classify_result['buckets']['B']} "
-                    f"D(sleeping)={classify_result['buckets']['D']}\n"
-                    f"Skipped: {classify_result['skipped']}"
-                )
-                notify(msg)
-                stage_done("Classify leads")
+            # Phase 3: Classify
+            if do_classification:
+                from cold_email_classifier import classify_csv
+                classify_result = classify_csv(str(email_source), classified_path)
 
-                # Phase 4: Generate AI emails
+                if classify_result.get("classified", 0) > 0:
+                    msg = (
+                        f"📊 <b>Classified</b>: {classify_result['classified']}/{classify_result['total']}\n"
+                        f"A(burning)={classify_result['buckets']['A']} "
+                        f"B(eroding)={classify_result['buckets']['B']} "
+                        f"D(sleeping)={classify_result['buckets']['D']}\n"
+                        f"Skipped: {classify_result['skipped']}"
+                    )
+                    notify(msg)
+                    stage_done("Classify leads")
+                else:
+                    print("⚠️ No leads classified, skipping email generation.")
+                    logging.info("No leads classified (all skipped)")
+                    notify(f"⚠️ No leads classified out of {classify_result.get('total', 0)} (all skipped)")
+                    do_email_generation = False
+                    do_smartlead_push = False
+            else:
+                print("\n⏭️ Classification skipped (config).")
+                logging.info("Classification skipped by config.")
+
+            # Phase 4: Generate AI emails
+            if do_email_generation:
+                source_for_gen = classified_path if do_classification else str(email_source)
                 gemini_key = os.environ.get("GEMINI_API_KEY", "")
                 if gemini_key:
                     from cold_email_generator import generate_emails_csv
                     generated_path = str(BASE_DIR / "cold_email_generated.csv")
-                    gen_result = generate_emails_csv(classified_path, generated_path)
+                    gen_result = generate_emails_csv(source_for_gen, generated_path)
 
                     if gen_result.get("generated", 0) > 0:
                         cold_email_csv = Path(generated_path)
@@ -291,30 +326,38 @@ if __name__ == "__main__":
                         )
                         notify(msg)
                         stage_done("Generate AI emails")
-
-                        # Phase 5: Push to Smartlead
-                        sl_key = os.environ.get("SMARTLEAD_API_KEY", "")
-                        if sl_key:
-                            from cold_email_smartlead import push_csv_to_smartlead
-                            push_result = push_csv_to_smartlead(generated_path)
-                            msg = (
-                                f"📤 <b>Smartlead push</b>: {push_result.get('total_added', 0)} added\n"
-                                f"Failed: {push_result.get('total_failed', 0)}"
-                            )
-                            notify(msg)
-                            stage_done("Smartlead push")
-                        else:
-                            print("⚠️ SMARTLEAD_API_KEY not set, skipping push.")
-                            logging.warning("SMARTLEAD_API_KEY not set")
                     else:
                         stage_failed("Generate AI emails", f"0 generated out of {gen_result.get('total', 0)}")
+                        do_smartlead_push = False
                 else:
                     print("⚠️ GEMINI_API_KEY not set, skipping AI email generation.")
                     logging.warning("GEMINI_API_KEY not set")
+                    do_smartlead_push = False
             else:
-                print("⚠️ No leads classified, skipping email generation.")
-                logging.info("No leads classified (all skipped)")
-                notify(f"⚠️ No leads classified out of {classify_result.get('total', 0)} (all skipped)")
+                print("\n⏭️ Email generation skipped (config).")
+                logging.info("Email generation skipped by config.")
+
+            # Phase 5: Push to Smartlead
+            if do_smartlead_push and cold_email_csv and cold_email_csv.exists():
+                sl_key = os.environ.get("SMARTLEAD_API_KEY", "")
+                if sl_key:
+                    from cold_email_smartlead import push_csv_to_smartlead
+                    push_result = push_csv_to_smartlead(str(cold_email_csv))
+                    msg = (
+                        f"📤 <b>Smartlead push</b>: {push_result.get('total_added', 0)} added\n"
+                        f"Failed: {push_result.get('total_failed', 0)}"
+                    )
+                    notify(msg)
+                    stage_done("Smartlead push")
+                else:
+                    print("⚠️ SMARTLEAD_API_KEY not set, skipping push.")
+                    logging.warning("SMARTLEAD_API_KEY not set")
+            elif do_smartlead_push:
+                print("\n⏭️ Smartlead push skipped (no generated emails).")
+                logging.info("Smartlead push skipped — no generated CSV.")
+            else:
+                print("\n⏭️ Smartlead push skipped (config).")
+                logging.info("Smartlead push skipped by config.")
 
         except Exception as e:
             logging.error(f"Cold email pipeline error: {e}", exc_info=True)

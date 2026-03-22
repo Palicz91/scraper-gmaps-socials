@@ -1,1 +1,81 @@
-Bangkok
+Soho London
+Covent Garden London
+Mayfair London
+Marylebone London
+Fitzrovia London
+Bloomsbury London
+Holborn London
+Clerkenwell London
+Farringdon London
+Shoreditch London
+Hoxton London
+Hackney London
+Dalston London
+Bethnal Green London
+Whitechapel London
+Spitalfields London
+Brick Lane London
+Liverpool Street London
+Bank London
+Canary Wharf London
+Greenwich London
+Deptford London
+Bermondsey London
+London Bridge London
+Borough London
+Southwark London
+Waterloo London
+Lambeth London
+Brixton London
+Clapham London
+Battersea London
+Chelsea London
+Fulham London
+Kensington London
+Notting Hill London
+Bayswater London
+Paddington London
+Camden London
+Kentish Town London
+Islington London
+Angel London
+Kings Cross London
+Hampstead London
+Primrose Hill London
+St Johns Wood London
+Wimbledon London
+Richmond London
+Putney London
+Wandsworth London
+Balham London
+Tooting London
+Peckham London
+Dulwich London
+Stratford London
+Walthamstow London
+Stoke Newington London
+Crouch End London
+Muswell Hill London
+Ealing London
+Chiswick London
+Hammersmith London
+Shepherds Bush London
+Brixton Village London
+Elephant and Castle London
+Pimlico London
+Westminster London
+Victoria London
+Knightsbridge London
+South Kensington London
+Earls Court London
+West Hampstead London
+Finsbury Park London
+Holloway London
+Highbury London
+Lewisham London
+Catford London
+Streatham London
+Crystal Palace London
+Harringay London
+Wood Green London
+Tottenham London
