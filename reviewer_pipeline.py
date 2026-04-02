@@ -18,6 +18,21 @@ import time
 import random
 import logging
 import unicodedata
+import fcntl
+
+LOCK_FILE = "/tmp/reviewer_pipeline.lock"
+
+def acquire_lock():
+    """Prevent duplicate instances via flock."""
+    lock_fd = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_fd.write(str(os.getpid()))
+        lock_fd.flush()
+        return lock_fd
+    except BlockingIOError:
+        print("Another reviewer pipeline instance is running. Exiting.")
+        sys.exit(0)
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -296,6 +311,8 @@ def run_queue_worker():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+    lock_fd = acquire_lock()
 
     try:
         from dotenv import load_dotenv
