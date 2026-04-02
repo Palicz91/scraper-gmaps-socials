@@ -186,25 +186,36 @@ def run_queue_worker():
                 place_name=place_name,
             )
 
-            # Step 2: Match reviewer by name (fuzzy, Unicode-aware)
+            # Step 2: Match reviewer by name (fuzzy) or photo_hash
             google_user_id = None
+            match_method = None
+
+            # Try name match first
             for r in reviewers:
                 if _fuzzy_name_match(r.get("reviewer_name", ""), reviewer_name):
                     google_user_id = r["google_user_id"]
+                    match_method = "name"
                     break
 
+            # Fallback: match by photo_hash
+            if not google_user_id and photo_hash:
+                for r in reviewers:
+                    if r.get("photo_hash") and r["photo_hash"] == photo_hash:
+                        google_user_id = r["google_user_id"]
+                        match_method = "photo_hash"
+                        log.info(f"Photo hash match for '{reviewer_name}' → {google_user_id}")
+                        break
+
             if not google_user_id:
-                # Try matching any reviewer — we'll check the contrib page photo
-                # For now, skip if no name match
-                log.warning(f"Could not match reviewer '{reviewer_name}' in {place_name}")
+                log.warning(f"Could not match reviewer '{reviewer_name}' in {place_name} (tried name + photo_hash among {len(reviewers)} reviewers)")
                 supabase.from_("reviewer_scrape_queue") \
-                    .update({"status": "failed", "error_message": f"no name match among {len(reviewers)} reviewers", "processed_at": datetime.now(timezone.utc).isoformat()}) \
+                    .update({"status": "failed", "error_message": f"no match among {len(reviewers)} reviewers (name+photo)", "processed_at": datetime.now(timezone.utc).isoformat()}) \
                     .eq("id", item_id).execute()
                 stats["failed"] += 1
                 time.sleep(random.uniform(3, 6))
                 continue
 
-            log.info(f"Matched {reviewer_name} → contrib ID {google_user_id}")
+            log.info(f"Matched {reviewer_name} → contrib ID {google_user_id} (via {match_method})")
 
             # Step 3: Scrape contributor profile
             contrib_result = scrape_contributor(google_user_id, driver=driver, max_scrolls=50)

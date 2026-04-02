@@ -278,6 +278,17 @@ def extract_reviewer_ids(driver):
             except:
                 pass
 
+            # Reviewer photo hash (ACg8oc... from profile photo URL)
+            photo_hash = ""
+            try:
+                img_el = el.find_element(By.CSS_SELECTOR, 'img.NBa7we')
+                img_src = img_el.get_attribute("src") or ""
+                ph_m = re.search(r'ACg8oc[A-Za-z0-9_-]+', img_src)
+                if ph_m:
+                    photo_hash = ph_m.group(0)
+            except:
+                pass
+
             # Review text snippet
             review_text = ""
             for sel in ['span.wiI7pd', 'div.MyEned span']:
@@ -293,6 +304,7 @@ def extract_reviewer_ids(driver):
                 "reviewer_name": reviewer_name,
                 "star_rating": star_rating,
                 "review_text_snippet": review_text,
+                "photo_hash": photo_hash,
             })
 
         except Exception as e:
