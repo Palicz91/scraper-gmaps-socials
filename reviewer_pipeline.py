@@ -135,6 +135,7 @@ def run_queue_worker():
     from reviewer_id_extractor import extract_ids_from_place, create_driver
     from contrib_scraper import scrape_contributor
 
+    MAX_RETRIES = 2
     stats = {"processed": 0, "profiled": 0, "failed": 0, "skipped": 0}
 
     driver = create_driver()
@@ -207,10 +208,17 @@ def run_queue_worker():
                         break
 
             if not google_user_id:
-                log.warning(f"Could not match reviewer '{reviewer_name}' in {place_name} (tried name + photo_hash among {len(reviewers)} reviewers)")
-                supabase.from_("reviewer_scrape_queue") \
-                    .update({"status": "failed", "error_message": f"no match among {len(reviewers)} reviewers (name+photo)", "processed_at": datetime.now(timezone.utc).isoformat()}) \
-                    .eq("id", item_id).execute()
+                retry_count = (item.get("retry_count") or 0) + 1
+                if retry_count >= MAX_RETRIES:
+                    log.warning(f"Permanently failed reviewer '{reviewer_name}' in {place_name} after {retry_count} attempts")
+                    supabase.from_("reviewer_scrape_queue") \
+                        .update({"status": "permanently_failed", "error_message": f"no match after {retry_count} attempts among {len(reviewers)} reviewers", "retry_count": retry_count, "processed_at": datetime.now(timezone.utc).isoformat()}) \
+                        .eq("id", item_id).execute()
+                else:
+                    log.warning(f"Could not match reviewer '{reviewer_name}' in {place_name} (attempt {retry_count}/{MAX_RETRIES}, {len(reviewers)} reviewers)")
+                    supabase.from_("reviewer_scrape_queue") \
+                        .update({"status": "pending", "error_message": f"retry {retry_count}/{MAX_RETRIES}: no match among {len(reviewers)} reviewers", "retry_count": retry_count, "processed_at": datetime.now(timezone.utc).isoformat()}) \
+                        .eq("id", item_id).execute()
                 stats["failed"] += 1
                 time.sleep(random.uniform(3, 6))
                 continue
