@@ -30,7 +30,7 @@ log = logging.getLogger("reviewer_pipeline")
 
 BATCH_LIMIT = 50
 CACHE_DAYS = 180  # 6 months — don't re-scrape within this window
-MAX_RETRIES = 3
+MAX_RETRIES = 2  # 2026-04-07: lowered from 3 — data showed only 1% marginal success on the 3rd attempt
 MAX_RUNTIME_MINUTES = 60  # hard limit per worker run (lock prevents overlap)
 PROCESSING_TIMEOUT_MINUTES = 30  # recover stuck "processing" items
 MIN_DELAY = 8  # seconds between requests (rate limit safety)
