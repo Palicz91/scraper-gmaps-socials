@@ -243,7 +243,14 @@ def run_queue_worker(worker_id=1):
     location_cache = {}
     LOCATION_CACHE_TTL = 1800  # 30 minutes
 
+    # Connections where we've already triggered the pool-too-small bulk fail
+    pool_too_small_handled = set()
+    # Item IDs that the bulk-fail logic has already terminated — skip them
+    already_processed_ids = set()
+
     for item in queue_items:
+        if item["id"] in already_processed_ids:
+            continue
         # Check runtime limit
         elapsed = (time.time() - start_time) / 60
         if elapsed >= MAX_RUNTIME_MINUTES or shutdown:
@@ -347,9 +354,12 @@ def run_queue_worker(worker_id=1):
 
             if not google_user_id:
                 retry_count = (item.get("retry_count") or 0) + 1
-                # Invalidate location cache so next retry gets a fresh scroll
-                if connection_id in location_cache:
-                    del location_cache[connection_id]
+                # NOTE: do NOT invalidate location_cache on failure. The cache
+                # accumulates IDs across sort orders (see merge logic above),
+                # so dropping it throws away work and forces every sibling
+                # queue item targeting the same connection to re-scrape from
+                # scratch — that's how W2 once burned 45 minutes on a single
+                # 50-item batch against a tiny pool.
 
                 # Fail-fast for mostly-non-Latin names: if the name is dominated
                 # by non-Latin script (Burmese, Thai, Arabic, CJK, etc.) and the
@@ -367,6 +377,43 @@ def run_queue_worker(worker_id=1):
                         .update({"status": "pending", "error_message": f"retry {retry_count}/{effective_max}: no match among {len(reviewers)} reviewers", "retry_count": retry_count, "processed_at": datetime.now(timezone.utc).isoformat()}) \
                         .eq("id", item_id).execute()
                 stats["failed"] += 1
+
+                # Pool-too-small short-circuit: if the scraped pool is tiny
+                # (place exposes only a handful of reviews publicly) and we
+                # have many sibling items queued for the same connection,
+                # bulk fast-fail them now instead of burning a full retry
+                # cycle on each. Threshold: pool < 10 AND remaining siblings
+                # > 3× pool size. Only run once per connection per worker run.
+                if (
+                    len(reviewers) < 10
+                    and connection_id not in pool_too_small_handled
+                ):
+                    pool_too_small_handled.add(connection_id)
+                    sibling_ids = [
+                        it["id"] for it in queue_items
+                        if it.get("connection_id") == connection_id
+                        and it["id"] != item_id
+                        and it["id"] not in already_processed_ids
+                    ]
+                    if len(sibling_ids) > 3 * max(len(reviewers), 1):
+                        log.warning(
+                            f"W{worker_id}: pool too small ({len(reviewers)} reviewers) "
+                            f"for {place_name}, fast-failing {len(sibling_ids)} sibling items"
+                        )
+                        # Batch update in chunks of 50
+                        for i in range(0, len(sibling_ids), 50):
+                            chunk = sibling_ids[i:i+50]
+                            supabase.from_("reviewer_scrape_queue") \
+                                .update({
+                                    "status": "permanently_failed",
+                                    "error_message": f"reviewer pool too small ({len(reviewers)} reviewers visible, {len(sibling_ids)+1} queue items) — place exposes too few reviews publicly",
+                                    "processed_at": datetime.now(timezone.utc).isoformat(),
+                                }) \
+                                .in_("id", chunk) \
+                                .execute()
+                        already_processed_ids.update(sibling_ids)
+                        stats["failed"] += len(sibling_ids)
+
                 time.sleep(random.uniform(3, 6))
                 continue
 
