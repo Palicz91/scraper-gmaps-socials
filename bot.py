@@ -209,14 +209,42 @@ async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
+
+    here = Path(__file__).resolve().parent
+
+    # 1) nohup launch path: pipeline.pid + run_all_log.txt
+    pid_file = here / "pipeline.pid"
+    if pid_file.exists():
+        try:
+            pid = int(pid_file.read_text().strip())
+            os.kill(pid, 0)  # alive check
+            log_file = here / "run_all_log.txt"
+            tail_text = ""
+            if log_file.exists():
+                with log_file.open("rb") as f:
+                    f.seek(0, 2)
+                    size = f.tell()
+                    f.seek(max(0, size - 6000))
+                    tail_text = f.read().decode("utf-8", errors="replace")
+                tail_text = "\n".join(tail_text.splitlines()[-20:])
+            msg = (
+                f"🟢 [{INSTANCE_NAME}] Pipeline running (PID {pid}, nohup mode).\n\n"
+                f"<pre>{tail_text or 'No log output yet.'}</pre>"
+            )
+            await update.message.reply_text(msg, parse_mode="HTML")
+            return
+        except (ValueError, ProcessLookupError, PermissionError, OSError):
+            pass  # stale or unreadable PID file → fall through
+
+    # 2) Legacy tmux launch path: tmux session created by /run command
     result = subprocess.run(["tmux", "has-session", "-t", TMUX_SESSION], capture_output=True)
     if result.returncode == 0:
         log = subprocess.run(
-            ["tmux", "capture-pane", "-t", TMUX_SESSION, "-p", "-S", "-10"],
+            ["tmux", "capture-pane", "-t", TMUX_SESSION, "-p", "-S", "-15"],
             capture_output=True, text=True
         )
         lines = log.stdout.strip()
-        msg = f"🟢 [{INSTANCE_NAME}] Pipeline running.\n\n<pre>" + (lines[-3000:] if lines else "No log") + "</pre>"
+        msg = f"🟢 [{INSTANCE_NAME}] Pipeline running (tmux mode).\n\n<pre>" + (lines[-3000:] if lines else "No log") + "</pre>"
         await update.message.reply_text(msg, parse_mode="HTML")
     else:
         await update.message.reply_text(f"⚪ [{INSTANCE_NAME}] No pipeline running.")
