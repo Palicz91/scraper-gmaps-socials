@@ -12,6 +12,7 @@ Commands:
 import subprocess
 import json
 import os
+import html
 from pathlib import Path
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -227,9 +228,10 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f.seek(max(0, size - 6000))
                     tail_text = f.read().decode("utf-8", errors="replace")
                 tail_text = "\n".join(tail_text.splitlines()[-20:])
+            safe_tail = html.escape(tail_text) if tail_text else "No log output yet."
             msg = (
                 f"🟢 [{INSTANCE_NAME}] Pipeline running (PID {pid}, nohup mode).\n\n"
-                f"<pre>{tail_text or 'No log output yet.'}</pre>"
+                f"<pre>{safe_tail}</pre>"
             )
             await update.message.reply_text(msg, parse_mode="HTML")
             return
