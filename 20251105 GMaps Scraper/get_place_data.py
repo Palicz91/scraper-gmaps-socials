@@ -4,6 +4,8 @@ import re
 import logging
 import os
 import random
+import signal
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -557,43 +559,140 @@ def get_place_data(driver, url, max_retries=3, scrape_reviews=True, max_review_s
     return None
 
 
-def save_single_record_to_csv(record, filename="places_data.csv"):
-    """Save a single place record to CSV file (append mode)."""
-    fieldnames = [
-        'name', 'url', 'category', 'website', 'phone', 'lat', 'lng',
-        'reviews', 'rating', 'address', 'located_in', 'plus_code',
-        'reviews_loaded', 'reviews_answered', 'reviews_unanswered', 'reviews_unanswered_pct',
-        'negative_total', 'negative_unanswered', 'negative_unanswered_pct',
-        'est_unanswered', 'est_negative_unanswered',
-        'stars_5', 'stars_4', 'stars_3', 'stars_2', 'stars_1',
-        'est_stars_5', 'est_stars_4', 'est_stars_3', 'est_stars_2', 'est_stars_1',
-    ]
+CSV_FIELDNAMES = [
+    'name', 'url', 'category', 'website', 'phone', 'lat', 'lng',
+    'reviews', 'rating', 'address', 'located_in', 'plus_code',
+    'reviews_loaded', 'reviews_answered', 'reviews_unanswered', 'reviews_unanswered_pct',
+    'negative_total', 'negative_unanswered', 'negative_unanswered_pct',
+    'est_unanswered', 'est_negative_unanswered',
+    'stars_5', 'stars_4', 'stars_3', 'stars_2', 'stars_1',
+    'est_stars_5', 'est_stars_4', 'est_stars_3', 'est_stars_2', 'est_stars_1',
+]
 
+
+def atomic_write_text(filepath, content):
+    """Atomic file write: temp file + os.replace (POSIX atomic)."""
+    tmp = filepath + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(content)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, filepath)
+
+
+def validate_csv(filename):
+    """Check CSV integrity. Remove truncated last row if found."""
+    if not os.path.exists(filename):
+        return
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        if len(lines) <= 1:
+            return
+        # Parse header to get expected column count
+        reader = csv.reader([lines[0]])
+        header_cols = len(next(reader))
+        # Check last line
+        last_line = lines[-1]
+        try:
+            reader = csv.reader([last_line])
+            last_cols = len(next(reader))
+        except csv.Error:
+            last_cols = 0
+        if last_cols != header_cols:
+            print(f"  🔧 CSV repair: removing truncated last row ({last_cols}/{header_cols} columns)")
+            logging.warning(f"CSV repair: truncated last row removed from {filename}")
+            with open(filename, "w", encoding="utf-8", newline="") as f:
+                f.writelines(lines[:-1])
+                f.flush()
+                os.fsync(f.fileno())
+    except Exception as e:
+        logging.error(f"CSV validation error: {e}")
+
+
+def deduplicate_csv(filename):
+    """Remove duplicate rows based on URL column."""
+    if not os.path.exists(filename):
+        return
+    try:
+        with open(filename, "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            fieldnames = reader.fieldnames
+        if not rows or not fieldnames:
+            return
+        seen_urls = set()
+        unique_rows = []
+        dupes = 0
+        for row in rows:
+            url = row.get("url", "")
+            if url and url in seen_urls:
+                dupes += 1
+                continue
+            seen_urls.add(url)
+            unique_rows.append(row)
+        if dupes > 0:
+            print(f"  🔧 Dedup: removed {dupes} duplicate rows from {filename}")
+            logging.info(f"Dedup: removed {dupes} duplicates from {filename}")
+            tmp = filename + ".dedup.tmp"
+            with open(tmp, "w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(unique_rows)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, filename)
+    except Exception as e:
+        logging.error(f"Dedup error: {e}")
+
+
+def save_single_record_to_csv(record, filename="places_data.csv"):
+    """Save a single place record to CSV file (append mode) with flush+fsync."""
     try:
         file_exists = os.path.exists(filename)
 
         with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer = csv.DictWriter(csvfile, fieldnames=CSV_FIELDNAMES)
             if not file_exists:
                 writer.writeheader()
             writer.writerow(record)
+            csvfile.flush()
+            os.fsync(csvfile.fileno())
         print(f"  ✓ Record saved to {filename}")
     except Exception as e:
         print(f"  ✗ Error saving record to CSV: {e}")
 
 
 def get_last_processed_index():
+    """Read last processed index. Falls back to CSV row count if file is corrupt."""
     try:
         with open("last_processed.txt", "r") as f:
-            return int(f.read().strip())
+            content = f.read().strip()
+            if content:
+                return int(content)
+    except (ValueError, FileNotFoundError):
+        pass
     except Exception:
-        return 0
+        pass
+    # Fallback: estimate from CSV row count
+    csv_file = "places_data.csv"
+    if os.path.exists(csv_file):
+        try:
+            with open(csv_file, "r", encoding="utf-8") as f:
+                row_count = sum(1 for _ in f) - 1  # minus header
+            if row_count > 0:
+                print(f"  🔧 last_processed.txt corrupt/missing, estimating from CSV: {row_count} rows")
+                logging.warning(f"last_processed.txt fallback: estimated index {row_count} from CSV")
+                return row_count
+        except Exception:
+            pass
+    return 0
 
 
 def save_last_processed_index(index):
+    """Atomic save of last processed index."""
     try:
-        with open("last_processed.txt", "w") as f:
-            f.write(str(index))
+        atomic_write_text("last_processed.txt", str(index))
     except Exception as e:
         logging.error(f"Failed to save progress index: {e}")
 
@@ -614,6 +713,11 @@ def main():
     OUTPUT_FILE = "places_data.csv"
     # =============================================
 
+    # CSV integrity check + dedup on startup
+    print("🔍 Checking CSV integrity...")
+    validate_csv(OUTPUT_FILE)
+    deduplicate_csv(OUTPUT_FILE)
+
     links = read_links_from_file()
     if not links:
         print("No links found. Exiting.")
@@ -621,6 +725,21 @@ def main():
 
     driver = None
     processed_count = 0
+    shutdown_requested = False
+
+    def signal_handler(sig, frame):
+        nonlocal shutdown_requested, driver
+        print(f"\n⚠️ Signal {sig} received, shutting down gracefully...")
+        logging.info(f"Signal {sig} received, graceful shutdown")
+        shutdown_requested = True
+        try:
+            if driver:
+                driver.quit()
+        except:
+            pass
+
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
 
     start_index = get_last_processed_index()
     if start_index > 0:
@@ -634,6 +753,11 @@ def main():
         return
 
     for i, link in enumerate(links[start_index:], start=start_index + 1):
+        if shutdown_requested:
+            print("🛑 Shutdown requested, saving progress and exiting...")
+            save_last_processed_index(i - 1)
+            break
+
         print(f"\n--- Processing link {i}/{len(links)} ---")
 
         # Batch pause every BATCH_SIZE links
@@ -727,25 +851,32 @@ def main():
 
         if place_data and place_data not in ("BROWSER_CRASHED", "RATE_LIMITED"):
             save_single_record_to_csv(place_data, OUTPUT_FILE)
+            # Save index AFTER CSV is flushed+synced — if crash between
+            # CSV write and index write, worst case is 1 duplicate row
+            # (dedup on next startup handles this)
+            save_last_processed_index(i)
             processed_count += 1
             print(f"Progress: {processed_count} places processed successfully")
         else:
+            # Still save index to skip failed links on resume
+            save_last_processed_index(i)
             logging.error(f"Failed to extract data for {link}")
 
-        if i % 5 == 0:
-            save_last_processed_index(i)
+        if i % 50 == 0:
             logging.info(f"Progress saved at link {i}/{len(links)}")
 
         # Random delay between requests
         random_delay()
 
     try:
-        driver.quit()
+        if driver:
+            driver.quit()
     except:
         pass
 
-    save_last_processed_index(len(links))
-    logging.info("All links processed, progress reset.")
+    if not shutdown_requested:
+        save_last_processed_index(len(links))
+        logging.info("All links processed.")
 
     print(f"\nProcess completed. Total places processed: {processed_count}")
     print(f"Output file: {OUTPUT_FILE}")

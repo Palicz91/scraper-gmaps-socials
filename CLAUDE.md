@@ -3,7 +3,6 @@
 ## Mi ez?
 Aktív, produkciós Google Maps scraper review analízissel és cold email pipeline-nal. A Scraper 1 modernizált utódja. Fő különbségek:
 - **Review analízis**: csillag eloszlás (1-5), megválaszolt/megválaszolatlan arány, negatív review detekció
-- **LRPI scoring**: 7 komponensű súlyozott lead scoring modell (nem egyszerű bucket rendszer)
 - **Email validáció**: Reacher API integráció (find + verify)
 - **Email generálás**: Gemini 9 prompt set-tel (3 bucket × 3 opener)
 - **Telegram bot**: run_config.json toggle-ökkel (review, validation, classification, generation, push)
@@ -15,9 +14,6 @@ Aktív, produkciós Google Maps scraper review analízissel és cold email pipel
 2. **search_query.py** — GMaps keresés → links.txt (helyURL-ek)
 3. **get_place_data.py** — Hely részletek scrape → places_data.csv
 4. **social_media_scraper.py** — Email, telefon, social linkek → output.xlsx
-5. **cold_email_classifier.py** — LRPI scoring (7 komponens, súlyozott)
-6. **cold_email_generator.py** — Gemini cold email generálás
-7. **cold_email_smartlead.py** — Smartlead API push
 
 ## Scraper indítás
 1. Nézd meg `locations.txt` és `categories.txt` formátumát a `20251105 GMaps Scraper/` mappában
@@ -33,9 +29,6 @@ Aktív, produkciós Google Maps scraper review analízissel és cold email pipel
 |------|--------|
 | `run_all.py` | Master orchestrátor, retry logika, Telegram értesítés |
 | `bot.py` | Telegram bot (/locations, /categories, /run, /status) |
-| `cold_email_classifier.py` | LRPI scoring (7 komponens, súlyozott) |
-| `cold_email_generator.py` | Gemini email generálás |
-| `cold_email_smartlead.py` | Smartlead API push |
 | `postprocess_places.py` | Duplikáció szűrés, adattisztítás |
 | `.env` | API kulcsok (Gemini, Reacher, Smartlead, Telegram) |
 
@@ -57,7 +50,6 @@ A `get_place_data.py` minden helyhez kinyeri:
 - Max 50 scroll a review panelben, soronkénti feldolgozás
 - Ha csillag adat hiányzik: becslés az összesített ratingből
 
-## LRPI Scoring (cold_email_classifier.py)
 **Formula**: `LRPI = C01×0.25 + C15×0.20 + C04×0.15 + C07×0.12 + C05×0.10 + C11×0.10 + C08×0.08`
 
 | Kód | Komponens | Súly | Leírás |
@@ -84,8 +76,6 @@ places_data.csv (GMaps + reviews)
   → output.csv (social enriched)
   → output_cleared.csv (postprocess: dedup, clean, email priority)
   → output_emails.csv (Reacher: find + verify)
-  → cold_email_classified.csv (LRPI scored, A/B/D bucketed)
-  → cold_email_generated.csv (Gemini seq1+seq2)
   → Smartlead (CRM push)
 ```
 
@@ -94,3 +84,28 @@ places_data.csv (GMaps + reviews)
 - A social scraper soronként ment — megszakítás után folytatható
 - Pipeline indítás előtt a régi köztes fájlokat automatikusan törli
 - Ha bot.log-ban "Conflict" hiba van: két bot instance fut egyszerre, az egyiket le kell állítani
+
+## Pipeline lifecycle és watchdog
+
+### Normál flow
+1. `run_forever.sh` indítja a `run_all.py`-t (crash esetén exponential backoff restart, max 20×)
+2. `run_all.py` végigfuttatja a pipeline-t (GMaps → Socials → Email → Cold Email → Push)
+3. Sikeres befejezés → `pipeline_complete.marker` fájl íródik + `run_forever.sh` kilép
+4. Watchdog (*/30 cron) ellenőrzi: ha marker <24h-s, NEM indít újra
+
+### Watchdog (watchdog.sh)
+- Cron: `*/30 * * * *` claude-bot crontab
+- Check 1: `pipeline_complete.marker` — ha friss (<24h), skip (pipeline sikeresen végzett)
+- Check 2: fut-e `run_forever.sh`? Ha nem → restart
+- Check 3: frissül-e valamelyik output fájl? Ha >60 perc stale → kill + restart
+- Figyelt fájlok: places_data.csv, links.txt, Socials output.csv
+
+### Manuális újraindítás
+```bash
+# Ha a pipeline kész de újra akarod indítani:
+rm /home/hello/scraper/scraper2/pipeline_complete.marker
+# A watchdog 30 percen belül automatikusan elindítja
+
+# Vagy kézzel:
+sudo -u hello bash -c "cd /home/hello/scraper/scraper2 && nohup ./run_forever.sh >> run_all_log.txt 2>&1 &"
+```

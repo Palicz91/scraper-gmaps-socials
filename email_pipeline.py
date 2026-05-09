@@ -23,11 +23,41 @@ REACHER_SECRET = os.environ.get("REACHER_SECRET", "")
 CONCURRENCY_FIND = 3
 CONCURRENCY_VERIFY = 5
 
-PREFIXES = [
-    "info", "hello", "contact", "reservations", "booking", "bookings",
-    "reserve", "manager", "admin", "office", "reception", "frontdesk",
-    "enquiries", "enquiry", "mail", "general", "gm",
+# Language-specific prefix lists — ordered by likelihood (most common first = faster find)
+PREFIXES_EN = [
+    "info", "hello", "contact", "reservations", "booking", "reserve",
+    "eat", "dine", "events", "catering", "host",
+    "manager", "admin", "office", "reception", "mail",
 ]
+
+PREFIXES_HU = [
+    "info", "hello", "foglalas", "asztalfoglalas", "etterem", "rendeles",
+    "kapcsolat", "vendeglato", "recepcion", "szalloda", "panzio",
+    "contact", "booking", "admin", "mail",
+]
+
+PREFIXES_DE = [
+    "info", "kontakt", "reservierung", "buchung", "restaurant", "gastro",
+    "hallo", "willkommen", "office", "empfang", "tisch",
+    "contact", "hello", "admin", "mail", "booking",
+]
+
+# Country → prefix list mapping. Fallback: EN.
+COUNTRY_PREFIXES = {
+    "Hungary": PREFIXES_HU,
+    "Magyarország": PREFIXES_HU,
+    "Austria": PREFIXES_DE,
+    "Germany": PREFIXES_DE,
+    "Switzerland": PREFIXES_DE,
+    "Liechtenstein": PREFIXES_DE,
+    "Luxembourg": PREFIXES_DE,
+}
+
+def get_prefixes_for_country(country: str) -> list:
+    """Get the appropriate email prefix list for a country. Fallback: EN."""
+    if not country:
+        return PREFIXES_EN
+    return COUNTRY_PREFIXES.get(country.strip(), PREFIXES_EN)
 
 SKIP_DOMAINS = {
     "facebook.com", "google.com", "instagram.com", "twitter.com", "tiktok.com",
@@ -84,8 +114,8 @@ def clean_email(raw: str) -> str | None:
     return e.lower()
 
 
-def find_email_for_domain(domain: str) -> dict:
-    """Try to find a working email for a domain."""
+def find_email_for_domain(domain: str, country: str = "") -> dict:
+    """Try to find a working email for a domain using country-specific prefixes."""
     # MX + catch-all check
     mx_result = check_email(f"test-mx-probe-99999@{domain}")
 
@@ -95,8 +125,9 @@ def find_email_for_domain(domain: str) -> dict:
     if mx_result.get("smtp", {}).get("is_deliverable") or mx_result.get("smtp", {}).get("is_catch_all"):
         return {"found_email": f"info@{domain}", "status": "catch_all", "tried": 1}
 
-    # Try prefixes
-    for i, prefix in enumerate(PREFIXES):
+    # Try country-specific prefixes
+    prefixes = get_prefixes_for_country(country)
+    for i, prefix in enumerate(prefixes):
         email = f"{prefix}@{domain}"
         result = check_email(email)
         reachable = result.get("is_reachable", "unknown")
@@ -105,7 +136,7 @@ def find_email_for_domain(domain: str) -> dict:
         if reachable == "safe" or (reachable == "risky" and deliverable):
             return {"found_email": email, "status": "found", "tried": i + 2}
 
-    return {"found_email": None, "status": "not_found", "tried": len(PREFIXES) + 1}
+    return {"found_email": None, "status": "not_found", "tried": len(prefixes) + 1}
 
 
 def process_csv(input_path: str, output_path: str = None):
@@ -151,12 +182,14 @@ def process_csv(input_path: str, output_path: str = None):
             row["_find_status"] = "pending"
 
     # Find emails for rows without scraped email
+    has_country_col = "country" in fieldnames
     needs_find = []
     for i, row in enumerate(rows):
         if row["_final_email"] is None and has_website_col:
             domain = extract_domain(row.get("website", ""))
             if domain:
-                needs_find.append((i, domain))
+                country = row.get("country", "") if has_country_col else ""
+                needs_find.append((i, domain, country))
             else:
                 row["_find_status"] = "skip_domain"
                 find_stats["skip"] += 1
@@ -165,7 +198,7 @@ def process_csv(input_path: str, output_path: str = None):
 
     if needs_find:
         with ThreadPoolExecutor(max_workers=CONCURRENCY_FIND) as pool:
-            futures = {pool.submit(find_email_for_domain, domain): idx for idx, domain in needs_find}
+            futures = {pool.submit(find_email_for_domain, domain, country): idx for idx, domain, country in needs_find}
             done_count = 0
             for future in as_completed(futures):
                 idx = futures[future]

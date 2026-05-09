@@ -101,7 +101,6 @@ DEFAULT_PIPELINE_CONFIG = {
     "email_validation": True,
     "classification": True,
     "email_generation": True,
-    "smartlead_push": True,
 }
 
 PIPELINE_LABELS = {
@@ -109,7 +108,6 @@ PIPELINE_LABELS = {
     "email_validation": "📧 Email validation",
     "classification": "🎯 Classification",
     "email_generation": "✉️ Email generation",
-    "smartlead_push": "📤 Smartlead push",
 }
 
 

@@ -1,5 +1,8 @@
 import time
 import traceback
+import os
+import signal
+import shutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -195,30 +198,61 @@ def search_query(driver, query):
 
 def save_links_to_file(all_links, filename="links.txt"):
     """
-    Save all extracted links to a file.
+    Save all extracted links to a file (atomic write via temp file).
     """
     try:
-        with open(filename, 'w', encoding='utf-8') as file:
+        tmp = filename + ".tmp"
+        with open(tmp, 'w', encoding='utf-8') as file:
             for link in all_links:
                 file.write(f"{link}\n")
+        os.replace(tmp, filename)  # atomic replace
         print(f"Saved {len(all_links)} links to {filename}")
     except Exception as e:
         print(f"Error saving links to file: {e}")
 
 
 if __name__ == '__main__':
+    # ─── Graceful shutdown handler ───
+    shutdown_requested = False
+    def handle_signal(sig, frame):
+        global shutdown_requested
+        print("\n⚠️ Shutdown signal received, saving progress...")
+        shutdown_requested = True
+    signal.signal(signal.SIGTERM, handle_signal)
+    signal.signal(signal.SIGINT, handle_signal)
+
+    # ─── Resume: load existing links ───
+    all_links = set()
+    if os.path.exists("links.txt"):
+        with open("links.txt", "r", encoding="utf-8") as f:
+            all_links = set(line.strip() for line in f if line.strip())
+        print(f"📂 Resumed {len(all_links)} existing links from links.txt")
+
+    # ─── Resume: load processed queries ───
+    processed_queries = set()
+    if os.path.exists("processed_queries.txt"):
+        with open("processed_queries.txt", "r", encoding="utf-8") as f:
+            processed_queries = set(line.strip() for line in f if line.strip())
+        print(f"⏭️ Skipping {len(processed_queries)} already processed queries")
+
     driver = create_driver()
     queries = get_queries()
-    all_links = set()  # Use set to avoid duplicates across queries
-    
+    new_queries_processed = 0
+
     try:
         for i, query in enumerate(queries, 1):
-            print(f"\n--- Processing query {i}/{len(queries)} ---")
+            if shutdown_requested:
+                print("🛑 Graceful shutdown, saving final state...")
+                break
 
-            # 🔁 Minden 100. query után indítsunk friss Chrome-ot,
-            # hogy ne fújódjon fel egyetlen session
-            if i % 100 == 1 and i != 1:
-                print(f"--- Restarting driver at query {i} to avoid Chrome bloat ---")
+            if query in processed_queries:
+                continue
+
+            print(f"\n--- Processing query {i}/{len(queries)} (new #{new_queries_processed + 1}) ---")
+
+            # 🔁 Minden 100. ÚJ query után indítsunk friss Chrome-ot
+            if new_queries_processed > 0 and new_queries_processed % 100 == 0:
+                print(f"--- Restarting driver at new query #{new_queries_processed} to avoid Chrome bloat ---")
                 try:
                     driver.quit()
                 except Exception:
@@ -233,21 +267,31 @@ if __name__ == '__main__':
                 print(f"[ERROR] Query {i}/{len(queries)} FAILED: {query}")
                 print(f"        Exception: {e}")
                 traceback.print_exc()
-                # opcionális: driver újraindítás, ha nagyon megkergül
                 try:
                     driver.quit()
                 except Exception:
                     pass
                 driver = create_driver()
-                # ugrunk a következő queryre
                 continue
-            
-            # Save progress after each query
+
+            # Mark query as processed (append)
+            with open("processed_queries.txt", "a", encoding="utf-8") as f:
+                f.write(query + "\n")
+            processed_queries.add(query)
+            new_queries_processed += 1
+
+            # Save progress after each query (atomic)
             save_links_to_file(list(all_links), "links.txt")
-            
+
+            # Periodic backup every 500 new queries
+            if new_queries_processed % 500 == 0:
+                backup_name = f"links_backup_{len(all_links)}.txt"
+                shutil.copy2("links.txt", backup_name)
+                print(f"  📦 Backup: {backup_name}")
+
             # Small delay between queries
             time.sleep(2)
-            
+
     except KeyboardInterrupt:
         print("\nProcess interrupted by user. Saving current progress...")
     finally:
@@ -257,4 +301,4 @@ if __name__ == '__main__':
             driver.quit()
         except Exception:
             pass
-        print(f"\nProcess completed. Total unique links collected: {len(all_links)}")
+        print(f"\nProcess completed. Total unique links collected: {len(all_links)} ({new_queries_processed} new queries this run)")

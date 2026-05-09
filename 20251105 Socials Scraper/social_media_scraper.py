@@ -475,8 +475,15 @@ class SocialMediaScraper:
                         'scraped_twitter', 'scraped_tiktok']:
                 if col not in df.columns: df[col] = ''
 
+            # Register DF for emergency save on SIGTERM
+            global _current_df, _current_output
+            _current_df = df
+            _current_output = output_file
+
             if start_index == 0:
-                df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=',')
+                tmp = output_file + ".tmp"
+                df.to_csv(tmp, index=False, encoding='utf-8-sig', sep=',')
+                os.replace(tmp, output_file)
 
             empty_result = {
                 'email': '', 'email_raw': '', 'phone': '', 'whatsapp': '',
@@ -566,10 +573,13 @@ class SocialMediaScraper:
                 # Save every 25 rows
                 if (index + 1) % 25 == 0 or (index + 1) == len(df):
                     try:
+                        def _atomic_save():
+                            tmp = output_file + ".tmp"
+                            df.to_csv(tmp, index=False, encoding='utf-8-sig', sep=',')
+                            os.replace(tmp, output_file)
                         loop = asyncio.get_event_loop()
                         await asyncio.wait_for(
-                            loop.run_in_executor(None,
-                                lambda: df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=',')),
+                            loop.run_in_executor(None, _atomic_save),
                             timeout=10.0)
                         logger.info(f"Saved at row {index + 1}")
                     except Exception as e:
@@ -579,8 +589,10 @@ class SocialMediaScraper:
                 progress_file.write_text(str(index + 1))
                 await asyncio.sleep(0.2)
 
-            # Final save
-            df.to_csv(output_file, index=False, encoding='utf-8-sig', sep=',')
+            # Final save (atomic)
+            tmp = output_file + ".tmp"
+            df.to_csv(tmp, index=False, encoding='utf-8-sig', sep=',')
+            os.replace(tmp, output_file)
             if progress_file.exists():
                 progress_file.unlink()
             logger.info("Scraping completed")
@@ -594,9 +606,24 @@ class SocialMediaScraper:
                 except Exception: pass
 
 
-# Graceful shutdown
+# Graceful shutdown with save
+_shutdown_requested = False
+_current_df = None
+_current_output = None
+
 def handle_exit(sig, frame):
-    logger.info("Shutdown...")
+    global _shutdown_requested
+    logger.info(f"Signal {sig} received, saving before shutdown...")
+    _shutdown_requested = True
+    # Save current state if we have a DataFrame
+    if _current_df is not None and _current_output is not None:
+        try:
+            tmp = _current_output + ".tmp"
+            _current_df.to_csv(tmp, index=False, encoding='utf-8-sig', sep=',')
+            os.replace(tmp, _current_output)
+            logger.info(f"Emergency save completed: {_current_output}")
+        except Exception as e:
+            logger.error(f"Emergency save failed: {e}")
     sys.exit(0)
 
 signal.signal(signal.SIGINT, handle_exit)

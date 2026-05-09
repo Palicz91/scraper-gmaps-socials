@@ -1,81 +1,68 @@
-Soho London
-Covent Garden London
-Mayfair London
-Marylebone London
-Fitzrovia London
-Bloomsbury London
-Holborn London
-Clerkenwell London
-Farringdon London
-Shoreditch London
-Hoxton London
-Hackney London
-Dalston London
-Bethnal Green London
-Whitechapel London
-Spitalfields London
-Brick Lane London
-Liverpool Street London
-Bank London
-Canary Wharf London
-Greenwich London
-Deptford London
-Bermondsey London
-London Bridge London
-Borough London
-Southwark London
-Waterloo London
-Lambeth London
-Brixton London
-Clapham London
-Battersea London
-Chelsea London
-Fulham London
-Kensington London
-Notting Hill London
-Bayswater London
-Paddington London
-Camden London
-Kentish Town London
-Islington London
-Angel London
-Kings Cross London
-Hampstead London
-Primrose Hill London
-St Johns Wood London
-Wimbledon London
-Richmond London
-Putney London
-Wandsworth London
-Balham London
-Tooting London
-Peckham London
-Dulwich London
-Stratford London
-Walthamstow London
-Stoke Newington London
-Crouch End London
-Muswell Hill London
-Ealing London
-Chiswick London
-Hammersmith London
-Shepherds Bush London
-Brixton Village London
-Elephant and Castle London
-Pimlico London
-Westminster London
-Victoria London
-Knightsbridge London
-South Kensington London
-Earls Court London
-West Hampstead London
-Finsbury Park London
-Holloway London
-Highbury London
-Lewisham London
-Catford London
-Streatham London
-Crystal Palace London
-Harringay London
-Wood Green London
-Tottenham London
+Downtown Dubai
+Dubai Marina Dubai
+JBR Dubai
+Palm Jumeirah Dubai
+Business Bay Dubai
+DIFC Dubai
+City Walk Dubai
+La Mer Dubai
+Jumeirah Dubai
+Jumeirah Beach Dubai
+Al Barsha Dubai
+Deira Dubai
+Bur Dubai Dubai
+Al Karama Dubai
+Satwa Dubai
+Oud Metha Dubai
+Dubai Hills Dubai
+Arabian Ranches Dubai
+JLT Dubai
+Discovery Gardens Dubai
+Sports City Dubai
+Motor City Dubai
+Silicon Oasis Dubai
+Al Quoz Dubai
+Bluewaters Island Dubai
+Dubai Design District Dubai
+Al Wasl Dubai
+Umm Suqeim Dubai
+Mirdif Dubai
+International City Dubai
+Al Nahda Dubai
+Barsha Heights Dubai
+Dubai Internet City Dubai
+Dubai Media City Dubai
+Knowledge Village Dubai
+Studio City Dubai
+Production City Dubai
+Al Rigga Deira Dubai
+Gold Souk Deira Dubai
+Karama Dubai
+Festival City Dubai
+Creek Harbour Dubai
+Jaddaf Dubai
+Zabeel Dubai
+Trade Centre Dubai
+Mall of Emirates Dubai
+Dubai Mall Dubai
+Ibn Battuta Dubai
+Abu Dhabi Downtown
+Corniche Abu Dhabi
+Al Maryah Island Abu Dhabi
+Saadiyat Island Abu Dhabi
+Yas Island Abu Dhabi
+Al Reem Island Abu Dhabi
+Al Khalidiyah Abu Dhabi
+Tourist Club Area Abu Dhabi
+Al Zahiyah Abu Dhabi
+Electra Street Abu Dhabi
+Hamdan Street Abu Dhabi
+Al Mushrif Abu Dhabi
+Al Bateen Abu Dhabi
+Khalifa City Abu Dhabi
+Al Ain UAE
+Sharjah UAE
+Ajman UAE
+Ras Al Khaimah UAE
+Fujairah UAE
+Umm Al Quwain UAE

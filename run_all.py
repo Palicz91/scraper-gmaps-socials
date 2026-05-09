@@ -3,6 +3,7 @@ from pathlib import Path as _P
 load_dotenv(_P(__file__).resolve().parent / ".env")
 
 import subprocess
+import sys
 import time
 import logging
 import json
@@ -26,9 +27,11 @@ RUN_CONFIG_FILE = BASE_DIR / "run_config.json"
 
 GMAPS_ARTIFACTS = [
     "links.txt",
+    "links.txt.tmp",
     "places_data.csv",
     "last_processed.txt",
     "google_maps_queries.txt",
+    "processed_queries.txt",
     "scraper_log.txt",
 ]
 
@@ -58,6 +61,84 @@ def load_run_config() -> dict:
     return {}
 
 
+def sync_to_master_table(csv_path: Path):
+    """Upsert scraped places into the scraped_places master table."""
+    from supabase import create_client as _sc
+    sb = _sc(os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    if not rows:
+        return
+
+    scraper_name = Path(__file__).resolve().parent.name  # "scraper2" or "Scraper"
+    now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+
+    def safe_int(v):
+        try: return int(v) if v not in (None, '') else None
+        except: return None
+
+    def safe_float(v):
+        try: return float(v) if v not in (None, '') else None
+        except: return None
+
+    batch = []
+    for r in rows:
+        url = r.get("url", "").strip()
+        if not url:
+            continue
+        batch.append({
+            "google_maps_url": url,
+            "name": r.get("name", ""),
+            "category": r.get("category", ""),
+            "website": r.get("website", ""),
+            "phone": r.get("phone", ""),
+            "address": r.get("address", ""),
+            "located_in": r.get("located_in", ""),
+            "plus_code": r.get("plus_code", ""),
+            "lat": safe_float(r.get("lat")),
+            "lng": safe_float(r.get("lng")),
+            "rating": safe_float(r.get("rating")),
+            "review_count": safe_int(r.get("reviews")),
+            "reviews_loaded": safe_int(r.get("reviews_loaded")),
+            "reviews_answered": safe_int(r.get("reviews_answered")),
+            "reviews_unanswered": safe_int(r.get("reviews_unanswered")),
+            "reviews_unanswered_pct": safe_float(r.get("reviews_unanswered_pct")),
+            "negative_total": safe_int(r.get("negative_total")),
+            "negative_unanswered": safe_int(r.get("negative_unanswered")),
+            "negative_unanswered_pct": safe_float(r.get("negative_unanswered_pct")),
+            "est_unanswered": safe_int(r.get("est_unanswered")),
+            "est_negative_unanswered": safe_int(r.get("est_negative_unanswered")),
+            "stars_5": safe_int(r.get("stars_5")),
+            "stars_4": safe_int(r.get("stars_4")),
+            "stars_3": safe_int(r.get("stars_3")),
+            "stars_2": safe_int(r.get("stars_2")),
+            "stars_1": safe_int(r.get("stars_1")),
+            "est_stars_5": safe_int(r.get("est_stars_5")),
+            "est_stars_4": safe_int(r.get("est_stars_4")),
+            "est_stars_3": safe_int(r.get("est_stars_3")),
+            "est_stars_2": safe_int(r.get("est_stars_2")),
+            "est_stars_1": safe_int(r.get("est_stars_1")),
+            "scraped_by": scraper_name,
+            "last_scraped_at": now,
+        })
+
+    # Upsert in batches of 100
+    upserted = 0
+    for i in range(0, len(batch), 100):
+        sb.table("scraped_places").upsert(
+            batch[i:i+100],
+            on_conflict="google_maps_url",
+            ignore_duplicates=False
+        ).execute()
+        upserted += len(batch[i:i+100])
+
+    print(f"📊 Master table: {upserted} places synced to scraped_places")
+    logging.info(f"Master table sync: {upserted} places upserted")
+
+
 def count_csv_rows(filepath: Path) -> int:
     """Count data rows in a CSV file."""
     try:
@@ -67,7 +148,30 @@ def count_csv_rows(filepath: Path) -> int:
         return 0
 
 
-def cleanup_artifacts():
+def backup_before_cleanup():
+    """Create backup of places_data.csv before cleanup. Keep max 3 backups."""
+    from datetime import datetime
+    places_csv = GMAPS_DIR / "places_data.csv"
+    if places_csv.exists() and places_csv.stat().st_size > 100:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = GMAPS_DIR / f"places_data_backup_{ts}.csv"
+        shutil.copy2(places_csv, backup_path)
+        print(f"  💾 Backup: {backup_path.name}")
+        logging.info(f"Backup created: {backup_path}")
+        # Keep max 3 backups
+        backups = sorted(GMAPS_DIR.glob("places_data_backup_*.csv"), key=lambda f: f.stat().st_mtime)
+        while len(backups) > 3:
+            old = backups.pop(0)
+            old.unlink()
+            print(f"  🗑️  Old backup removed: {old.name}")
+
+
+def cleanup_artifacts(force=False):
+    if not force:
+        print("  ℹ️  Cleanup skipped (resume mode). Use --clean to force.")
+        logging.info("Cleanup skipped (resume mode).")
+        return
+    backup_before_cleanup()
     deleted = 0
     for filename in GMAPS_ARTIFACTS:
         filepath = GMAPS_DIR / filename
@@ -81,11 +185,57 @@ def cleanup_artifacts():
             filepath.unlink()
             print(f"  🗑️  {filepath}")
             deleted += 1
+    # Also clean backup files
+    for f in GMAPS_DIR.glob("links_backup_*.txt"):
+        f.unlink()
+        deleted += 1
     if deleted == 0:
         print("  ℹ️  Nothing to clean up.")
     else:
         print(f"  ✅ {deleted} files deleted.")
     logging.info(f"Cleanup: {deleted} files deleted.")
+
+
+def detect_resume_state():
+    """Detect which pipeline stage to resume from based on existing artifacts."""
+    links_file = GMAPS_DIR / "links.txt"
+    places_csv = GMAPS_DIR / "places_data.csv"
+    queries_file = GMAPS_DIR / "google_maps_queries.txt"
+    processed_q = GMAPS_DIR / "processed_queries.txt"
+
+    # Stage 2: place_data — if we have links AND places_data already exists
+    if places_csv.exists() and places_csv.stat().st_size > 100:
+        rows = count_csv_rows(places_csv)
+        link_count = sum(1 for _ in open(links_file)) if links_file.exists() else 0
+        print(f"  📊 Resume: places_data.csv has {rows} rows, links.txt has {link_count} links")
+        logging.info(f"Resume: stage=place_data, rows={rows}, links={link_count}")
+        return 2  # skip to get_place_data
+
+    # Stage 1: search_query — if we have links.txt (search in progress or done)
+    if links_file.exists() and links_file.stat().st_size > 0:
+        link_count = sum(1 for _ in open(links_file))
+        done_queries = sum(1 for _ in open(processed_q)) if processed_q.exists() else 0
+        total_queries = sum(1 for _ in open(queries_file)) if queries_file.exists() else 0
+
+        if total_queries > 0 and done_queries >= total_queries:
+            print(f"  📊 Resume: search complete ({link_count} links, {done_queries}/{total_queries} queries)")
+            logging.info(f"Resume: stage=place_data (search done), links={link_count}")
+            return 2  # search done, skip to place_data
+        else:
+            print(f"  📊 Resume: search in progress ({link_count} links, {done_queries}/{total_queries} queries)")
+            logging.info(f"Resume: stage=search_query, links={link_count}, queries={done_queries}/{total_queries}")
+            return 1  # resume search_query
+
+    # Stage 1: if queries file exists but no links yet
+    if queries_file.exists():
+        print(f"  📊 Resume: queries generated, starting search")
+        logging.info("Resume: stage=search_query (queries exist)")
+        return 1
+
+    # Stage 0: fresh start
+    print("  📊 Fresh start (no artifacts found)")
+    logging.info("Resume: stage=fresh start")
+    return 0
 
 
 def run_script(name: str, script_path: Path, retries=2, cwd: Path | None = None, extra_env: dict | None = None):
@@ -99,7 +249,7 @@ def run_script(name: str, script_path: Path, retries=2, cwd: Path | None = None,
         logging.info(f"Running: {script_path}, attempt {attempt}")
         try:
             subprocess.run(
-                ["python3", str(script_path)],
+                [sys.executable, str(script_path)],
                 check=True,
                 cwd=str(cwd) if cwd else None,
                 env=env,
@@ -131,7 +281,7 @@ def run_postprocess(input_csv: Path):
     logging.info(f"Running postprocess: {postprocess_script} {input_csv}")
     try:
         subprocess.run(
-            ["python3", str(postprocess_script), str(input_csv)],
+            [sys.executable, str(postprocess_script), str(input_csv)],
             check=True,
             cwd=str(SOCIAL_DIR),
         )
@@ -151,37 +301,35 @@ if __name__ == "__main__":
     run_config = load_run_config()
     scrape_reviews = run_config.get("scrape_reviews", True)
     do_email_validation = run_config.get("email_validation", True)
-    do_classification = run_config.get("classification", True)
-    do_email_generation = run_config.get("email_generation", True)
-    do_smartlead_push = run_config.get("smartlead_push", True)
 
     mode_parts = []
     if scrape_reviews:
         mode_parts.append("reviews")
     if do_email_validation:
         mode_parts.append("email validation")
-    if do_classification:
-        mode_parts.append("classification")
-    if do_email_generation:
-        mode_parts.append("email gen")
-    if do_smartlead_push:
-        mode_parts.append("smartlead")
     mode_label = ", ".join(mode_parts) if mode_parts else "scrape only"
     print(f"=== PIPELINE START — {mode_label} ===")
     logging.info(f"=== PIPELINE START — {mode_label} ===")
     notify(f"🟢 <b>Pipeline started</b> — {mode_label}")
 
-    # Cleanup
-    print("\n🧹 Cleaning up...")
-    cleanup_artifacts()
+    # Cleanup only with --clean flag
+    force_clean = "--clean" in sys.argv
+    print("\n🧹 Checking artifacts...")
+    cleanup_artifacts(force=force_clean)
+
+    # Detect resume state
+    start_from = detect_resume_state()
+    if start_from > 0:
+        notify(f"🔄 <b>Resuming</b> from stage {start_from}: <code>{scripts[start_from][0]}</code>")
 
     total_places = 0
     social_found = 0
+    pipeline_success = False
 
     # Pass review config to get_place_data.py via env var
     scrape_env = {"SCRAPE_REVIEWS": "true" if scrape_reviews else "false"}
 
-    for name, script in scripts:
+    for name, script in scripts[start_from:]:
         ok = run_script(name, script, cwd=GMAPS_DIR, extra_env=scrape_env)
         if not ok:
             print(f"⛔ Stopping — {name} failed.")
@@ -197,6 +345,14 @@ if __name__ == "__main__":
             print(f"📁 Copied: {gmaps_csv} → {target_csv}")
             logging.info(f"Copied: {gmaps_csv} → {target_csv}")
             stage_done("GMaps → Social copy", f"📍 {total_places} places")
+            pipeline_success = True
+
+            # Sync to scraped_places master table (upsert by google_maps_url)
+            try:
+                sync_to_master_table(gmaps_csv)
+            except Exception as e:
+                logging.error(f"Master table sync error: {e}")
+                print(f"⚠️ Master table sync failed: {e}")
 
             social_script = SOCIAL_DIR / "social_media_scraper.py"
             if social_script.exists():
@@ -210,6 +366,9 @@ if __name__ == "__main__":
                         print("⚠️ output.csv not found.")
                         logging.warning("output.csv missing.")
                         stage_failed("Social output", "output.csv missing")
+                        pipeline_success = False
+                else:
+                    pipeline_success = False
             else:
                 print("⚠️ Social script not found.")
         else:
@@ -266,113 +425,19 @@ if __name__ == "__main__":
     if email_output and email_output.exists():
         output_files.append(email_output)
 
-    # ─── Cold Email Pipeline (Classify → Generate → Smartlead) ───
-    cold_email_csv = None
-    email_source = email_output if email_output and email_output.exists() else cleared_csv
-
-    if not do_classification and not do_email_generation and not do_smartlead_push:
-        print("\n⏭️ Cold email pipeline skipped (config).")
-        logging.info("Cold email pipeline skipped by config.")
-    elif email_source and email_source.exists() and email_source.stat().st_size > 0:
-        print("\n🎯 Running cold email pipeline...")
-        logging.info("Cold email pipeline started")
-        notify("🎯 <b>Cold email pipeline started</b>")
-
-        try:
-            classified_path = str(BASE_DIR / "cold_email_classified.csv")
-
-            # Phase 3: Classify
-            if do_classification:
-                from cold_email_classifier import classify_csv
-                classify_result = classify_csv(str(email_source), classified_path)
-
-                if classify_result.get("classified", 0) > 0:
-                    msg = (
-                        f"📊 <b>Classified</b>: {classify_result['classified']}/{classify_result['total']}\n"
-                        f"A(burning)={classify_result['buckets']['A']} "
-                        f"B(eroding)={classify_result['buckets']['B']} "
-                        f"D(sleeping)={classify_result['buckets']['D']}\n"
-                        f"Skipped: {classify_result['skipped']}"
-                    )
-                    notify(msg)
-                    stage_done("Classify leads")
-                else:
-                    print("⚠️ No leads classified, skipping email generation.")
-                    logging.info("No leads classified (all skipped)")
-                    notify(f"⚠️ No leads classified out of {classify_result.get('total', 0)} (all skipped)")
-                    do_email_generation = False
-                    do_smartlead_push = False
-            else:
-                print("\n⏭️ Classification skipped (config).")
-                logging.info("Classification skipped by config.")
-
-            # Phase 4: Generate AI emails
-            if do_email_generation:
-                source_for_gen = classified_path if do_classification else str(email_source)
-                gemini_key = os.environ.get("GEMINI_API_KEY", "")
-                if gemini_key:
-                    from cold_email_generator import generate_emails_csv
-                    generated_path = str(BASE_DIR / "cold_email_generated.csv")
-                    gen_result = generate_emails_csv(source_for_gen, generated_path)
-
-                    if gen_result.get("generated", 0) > 0:
-                        cold_email_csv = Path(generated_path)
-                        msg = (
-                            f"📧 <b>AI emails generated</b>: {gen_result['generated']}/{gen_result['total']}\n"
-                            f"Failed: {gen_result['failed']}\n"
-                            f"A={gen_result['by_bucket'].get('A',0)} "
-                            f"B={gen_result['by_bucket'].get('B',0)} "
-                            f"D={gen_result['by_bucket'].get('D',0)}"
-                        )
-                        notify(msg)
-                        stage_done("Generate AI emails")
-                    else:
-                        stage_failed("Generate AI emails", f"0 generated out of {gen_result.get('total', 0)}")
-                        do_smartlead_push = False
-                else:
-                    print("⚠️ GEMINI_API_KEY not set, skipping AI email generation.")
-                    logging.warning("GEMINI_API_KEY not set")
-                    do_smartlead_push = False
-            else:
-                print("\n⏭️ Email generation skipped (config).")
-                logging.info("Email generation skipped by config.")
-
-            # Phase 5: Push to Smartlead
-            if do_smartlead_push and cold_email_csv and cold_email_csv.exists():
-                sl_key = os.environ.get("SMARTLEAD_API_KEY", "")
-                if sl_key:
-                    from cold_email_smartlead import push_csv_to_smartlead
-                    push_result = push_csv_to_smartlead(str(cold_email_csv))
-                    msg = (
-                        f"📤 <b>Smartlead push</b>: {push_result.get('total_added', 0)} added\n"
-                        f"Failed: {push_result.get('total_failed', 0)}"
-                    )
-                    notify(msg)
-                    stage_done("Smartlead push")
-                else:
-                    print("⚠️ SMARTLEAD_API_KEY not set, skipping push.")
-                    logging.warning("SMARTLEAD_API_KEY not set")
-            elif do_smartlead_push:
-                print("\n⏭️ Smartlead push skipped (no generated emails).")
-                logging.info("Smartlead push skipped — no generated CSV.")
-            else:
-                print("\n⏭️ Smartlead push skipped (config).")
-                logging.info("Smartlead push skipped by config.")
-
-        except Exception as e:
-            logging.error(f"Cold email pipeline error: {e}", exc_info=True)
-            stage_failed("Cold email pipeline", str(e))
-
-    # Add generated CSV to output files
-    if cold_email_csv and cold_email_csv.exists():
-        output_files.append(cold_email_csv)
-
     for f in output_files:
         if f.exists() and f.stat().st_size > 0:
             send_file(str(f), f"📎 {f.name}")
 
-    # Clean up run config
+    # Clean up run config (but NOT artifacts — those are needed for resume)
     if RUN_CONFIG_FILE.exists():
         RUN_CONFIG_FILE.unlink()
+
+    # Clean up artifacts only after SUCCESSFUL full pipeline completion
+    if pipeline_success:
+        print("\n🧹 Pipeline complete — cleaning up artifacts for next run...")
+        cleanup_artifacts(force=True)
+    else:
+        print("\n⚠️ Pipeline failed — keeping artifacts for resume on next run.")
 
     print("\n🏁 Done.")

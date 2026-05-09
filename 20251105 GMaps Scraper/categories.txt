@@ -1,30 +1,34 @@
-restaurants
-cafes
-bistro
-brasserie
-gastropub
+restaurant
+fine dining restaurant
 brunch restaurant
+cafe
 coffee shop
+bakery
 dessert shop
-bakery cafe
-wine bar
-cocktail bar with food
-pizza restaurant
-burger restaurant
-sushi restaurant
-indian restaurant
-italian restaurant
-thai restaurant
-mexican restaurant
-greek restaurant
-turkish restaurant
-lebanese restaurant
-japanese restaurant
-chinese restaurant
-korean restaurant
-vietnamese restaurant
-tapas bar
+juice bar
+shisha cafe
 steakhouse
 seafood restaurant
+sushi restaurant
+indian restaurant
+lebanese restaurant
+arabic restaurant
+turkish restaurant
+italian restaurant
+thai restaurant
+chinese restaurant
+japanese restaurant
+korean restaurant
+burger restaurant
+pizza restaurant
+fast food restaurant
+healthy food restaurant
 vegan restaurant
-vegetarian restaurant
+bistro
+gastropub
+ice cream shop
+food court
+buffet restaurant
+rooftop restaurant
+beach restaurant
+hotel restaurant

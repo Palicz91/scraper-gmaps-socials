@@ -84,8 +84,10 @@ def accept_google_consent(driver, timeout=3):
         return False
 
 
-def sort_reviews_by_newest(driver):
-    """Click the sort dropdown and select 'Newest' to prioritize recent reviewers."""
+def sort_reviews(driver, sort_order="newest"):
+    """Click the sort dropdown and select the given order.
+    sort_order: 'newest' (data-index=1), 'highest' (data-index=2), 'lowest' (data-index=3)
+    """
     sort_button_selectors = [
         "//button[contains(@aria-label, 'Sort')]",
         "//button[contains(@aria-label, 'sort')]",
@@ -109,27 +111,36 @@ def sort_reviews_by_newest(driver):
         log.info("Sort button not found, proceeding with default order")
         return False
 
-    # Click "Newest" in the dropdown menu
-    newest_selectors = [
-        "//div[@role='menuitemradio' and contains(., 'Newest')]",
-        "//div[@role='menuitemradio' and contains(., 'Neueste')]",
-        "//li[contains(., 'Newest')]",
-        "//div[@data-index='1']",  # Newest is typically the second option
-    ]
-    for xpath in newest_selectors:
+    # Map sort_order to dropdown index and labels
+    sort_map = {
+        "newest": {"index": "1", "labels": ["Newest", "Neueste"]},
+        "highest": {"index": "2", "labels": ["Highest rating", "Beste Bewertung"]},
+        "lowest": {"index": "3", "labels": ["Lowest rating", "Schlechteste Bewertung"]},
+    }
+    config = sort_map.get(sort_order, sort_map["newest"])
+
+    selectors = [f"//div[@role='menuitemradio' and contains(., '{lbl}')]" for lbl in config["labels"]]
+    selectors.append(f"//div[@data-index='{config['index']}']")
+
+    for xpath in selectors:
         try:
             item = WebDriverWait(driver, 3).until(
                 EC.element_to_be_clickable((By.XPATH, xpath))
             )
             item.click()
             time.sleep(3)
-            log.info("Sorted reviews by Newest")
+            log.info(f"Sorted reviews by {sort_order}")
             return True
         except:
             continue
 
-    log.info("Could not select Newest sort option")
+    log.info(f"Could not select {sort_order} sort option")
     return False
+
+
+def sort_reviews_by_newest(driver):
+    """Backward-compatible wrapper."""
+    return sort_reviews(driver, "newest")
 
 
 def scroll_review_panel(driver, max_scrolls=50, scroll_pause=1.5):
@@ -322,7 +333,7 @@ def extract_reviewer_ids(driver):
     return deduped
 
 
-def extract_ids_from_place(place_url, max_scrolls=50, driver=None, place_name=None):
+def extract_ids_from_place(place_url, max_scrolls=50, driver=None, place_name=None, **kwargs):
     """
     Main entry point: open a Maps place URL, scroll reviews, extract user IDs.
     If direct URL fails to load reviews, falls back to search by place_name.
@@ -376,8 +387,9 @@ def extract_ids_from_place(place_url, max_scrolls=50, driver=None, place_name=No
             log.warning("Could not open Reviews tab")
             return []
 
-        # Sort by newest to prioritize recent reviewers
-        sort_reviews_by_newest(driver)
+        # Sort reviews (configurable order for better coverage across retries)
+        _sort = kwargs.get("sort_order", "newest")
+        sort_reviews(driver, _sort)
 
         # Scroll through reviews
         loaded = scroll_review_panel(driver, max_scrolls=max_scrolls)

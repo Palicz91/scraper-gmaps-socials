@@ -16,3 +16,16 @@ last_processed.txt
 # Chrome temp dirs
 *.scoped_dir*
 .env
+
+# Secrets
+.reviewer-env
+*.env
+
+# Runtime artifacts
+pipeline.pid
+pipeline_complete.marker
+*.bak
+*.bak-*
+run_all_log.txt
+scraper_log.txt
+processed_queries.txt
